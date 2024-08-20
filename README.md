@@ -5,9 +5,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 
+![Zrzut ekranu z 2024-08-20 20-04-16](https://github.com/user-attachments/assets/b96f1747-ef27-47bc-8738-9baf9ae9336a)
+
 ## Overview
 
-`WatermarkRemover-AI` is a Python-based application that utilizes state-of-the-art AI models—Florence-2 from Microsoft for detecting watermarks and LaMA (Large Masked Autoregressive) for inpainting—to effectively remove watermarks from images. The application provides a user-friendly interface built with PyQt6, allowing for easy batch processing and previewing of original, cleaned, and difference images.
+`WatermarkRemover-AI` is a Python-based application that utilizes state-of-the-art AI models—Florence-2 from Microsoft for detecting watermarks and LaMA (Large Masked Autoregressive) for inpainting—to effectively remove watermarks from images. The application provides a user-friendly interface built with PyQt6, allowing for easy batch processing and previewing of original, cleaned, and difference images. It's effective tool for large datasets processing for AI image models learning and training.
 
 ## Table of Contents
 

@@ -57,10 +57,13 @@
    git clone https://github.com/yourusername/WatermarkRemover-AI.git
    cd WatermarkRemover-AI
    ```
+   
 
 2. **Install Dependencies:** 
-   ```pip install -r requirements.txt```
-   ```pip install transformers==4.44.1```
+   ```
+   pip install -r requirements.txt
+   pip install transformers>=4.44.0
+   ```
 
 4. Run the Application:
    ```python remwm.py```

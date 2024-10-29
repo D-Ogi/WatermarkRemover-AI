@@ -59,8 +59,9 @@
 
 2. **Install Dependencies:** 
    ```pip install -r requirements.txt```
+   ```pip install transformers==4.44.1```
 
-3. Run the Application:
+4. Run the Application:
    ```python remwm.py```
 
 ## Usage

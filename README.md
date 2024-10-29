@@ -55,7 +55,8 @@
 
    ```
    git clone https://github.com/yourusername/WatermarkRemover-AI.git
-   cd WatermarkRemover-AI```
+   cd WatermarkRemover-AI
+   ```
 
 2. **Install Dependencies:** 
    ```pip install -r requirements.txt```

@@ -7,6 +7,10 @@
 
 ![image](https://github.com/user-attachments/assets/df3203ed-057e-499b-86bc-f9e96be66c1e)
 
+![image](https://github.com/user-attachments/assets/e89825fb-3b14-4358-96f3-feb526908ad3)
+
+![image](https://github.com/user-attachments/assets/64e63d5c-4ecc-4fe0-954d-1b72e6a29580)
+
 
 ## Overview
 
@@ -87,6 +91,8 @@
 ### 3. **Processing Images**
    - Click "Start Processing" to begin processing all images in the input directory.
    - The progress bar will update as images are processed.
+
+You may want to change the object detection prompt from `text_input = 'logo'` to 'watermark' or 'text' depending on your use case. 
 
 ## Contributing
 

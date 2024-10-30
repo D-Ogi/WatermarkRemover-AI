@@ -5,7 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.8+](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/downloads/)
 
-![Zrzut ekranu z 2024-08-20 20-04-16](https://github.com/user-attachments/assets/b96f1747-ef27-47bc-8738-9baf9ae9336a)
+![image](https://github.com/user-attachments/assets/df3203ed-057e-499b-86bc-f9e96be66c1e)
+
 
 ## Overview
 
@@ -17,7 +18,6 @@
 - [Technical Overview](#technical-overview)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Configuration](#configuration)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -26,8 +26,7 @@
 - **Batch Image Processing**: Select a directory of images and process them all at once.
 - **Advanced Watermark Detection**: Utilizes Florence-2's open vocabulary detection to identify watermark regions accurately.
 - **High-Quality Inpainting**: Employs the LaMA model for seamless inpainting, ensuring high-quality results.
-- **Preview Capabilities**: View original, cleaned, and difference images side-by-side for comparison.
-- **Customizable Settings**: Configure maximum image size, overwrite behavior, and other parameters.
+- **Customizable Settings**: Configure overwrite behavior
 
 ## Technical Overview
 
@@ -46,8 +45,8 @@
 
 ### Prerequisites
 
-- Python 3.8+
-- CUDA (optional, for GPU acceleration)
+- Python 3.8+ (3.11 recommended)
+- CUDA (for GPU acceleration)
 
 ### Steps
 
@@ -66,40 +65,32 @@
    ```
 
 4. Run the Application:
-   ```python remwm.py```
+
+   Command-line
+   
+   ```python remwm.py source_directory output_directory```
+   
+   GUI:
+   
+    ```python remwmgui.py```
+   
 
 ## Usage
 
 ### 1. **Selecting Directories**
-   - Use the "Select Input Directory" button to choose the directory containing the images you want to process.
-   - Use the "Select Output Directory" button to choose where the processed images will be saved.
+   - Use the "Input Directory" button to choose the directory containing the images you want to process.
+   - Use the "Output Directory" button to choose where the processed images will be saved.
 
-### 2. **Configuring Settings**
-   - **Max Width/Height**: Set the maximum size for image processing. Images larger than this will be resized while maintaining aspect ratio.
-   - **If Exists**: Choose whether to skip or overwrite existing processed images.
+### 2. **Configuring Settings (GUI only)**
+   - **If output file exists**: Choose whether to skip or overwrite existing processed images.
 
 ### 3. **Processing Images**
-   - Click "Start Batch Processing" to begin processing all images in the input directory.
-   - The progress bar will update as images are processed, and the GUI will display the original, cleaned, and difference images.
-
-### 4. **Viewing Results**
-   - The GUI shows the original, cleaned, and difference images side-by-side for easy comparison.
-
-## Configuration
-
-The application automatically saves and loads settings from a configuration file (`remwmconfig.ini`). This includes input/output directories, maximum image size, and overwrite behavior. The configuration file is updated whenever the "Start Batch Processing" button is clicked.
+   - Click "Start Processing" to begin processing all images in the input directory.
+   - The progress bar will update as images are processed.
 
 ## Contributing
 
 Contributions are welcome! If you'd like to contribute, please fork this repository, create a feature branch, and submit a pull request.
-
-### Steps:
-
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/YourFeature`).
-3. Commit your changes (`git commit -m 'Add your feature'`).
-4. Push to the branch (`git push origin feature/YourFeature`).
-5. Open a pull request.
 
 ## License
 

@@ -1,24 +1,42 @@
 import sys
-import os
+import click
+from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 from transformers import AutoProcessor, AutoModelForCausalLM
-from lama_cleaner.model_manager import ModelManager
-from lama_cleaner.schema import Config, HDStrategy, LDMSampler
+from iopaint.model_manager import ModelManager
+from iopaint.schema import HDStrategy, LDMSampler, InpaintRequest as Config
 import torch
+from torch import Module
+import tqdm
+from loguru import logger
 from enum import Enum
+
+try:
+    from cv2.typing import MatLike
+except ImportError:
+    MatLike = np.ndarray
 
 
 class TaskType(str, Enum):
-    OPEN_VOCAB_DETECTION = '<OPEN_VOCABULARY_DETECTION>'
+    OPEN_VOCAB_DETECTION = "<OPEN_VOCABULARY_DETECTION>"
     """Detect bounding box for objects and OCR text"""
 
 
-def run_example(task_prompt: TaskType, image, text_input, model, processor, device):
+def identify(
+    task_prompt: TaskType,
+    image: MatLike,
+    text_input: str,
+    model: AutoModelForCausalLM,
+    processor: AutoProcessor,
+    device: str,
+):
     """Runs an inference task using the model."""
     if not isinstance(task_prompt, TaskType):
-        raise ValueError(f"task_prompt must be a TaskType, but {task_prompt} is of type {type(task_prompt)}")
+        raise ValueError(
+            f"task_prompt must be a TaskType, but {task_prompt} is of type {type(task_prompt)}"
+        )
 
     prompt = task_prompt.value if text_input is None else task_prompt.value + text_input
     inputs = processor(text=prompt, images=image, return_tensors="pt")
@@ -34,17 +52,17 @@ def run_example(task_prompt: TaskType, image, text_input, model, processor, devi
     )
     generated_text = processor.batch_decode(generated_ids, skip_special_tokens=False)[0]
     parsed_answer = processor.post_process_generation(
-        generated_text,
-        task=task_prompt.value,
-        image_size=(image.width, image.height)
+        generated_text, task=task_prompt.value, image_size=(image.width, image.height)
     )
     return parsed_answer
 
 
-def get_watermark_mask(image, model, processor, device):
-    text_input = 'watermark'
+def get_watermark_mask(
+    image: MatLike, model: AutoModelForCausalLM, processor: AutoProcessor, device: str
+):
+    text_input = "watermark"
     task_prompt = TaskType.OPEN_VOCAB_DETECTION  # Use OPEN_VOCAB_DETECTION
-    parsed_answer = run_example(task_prompt, image, text_input, model, processor, device)
+    parsed_answer = identify(task_prompt, image, text_input, model, processor, device)
 
     # Get image dimensions
     image_width, image_height = image.size
@@ -54,9 +72,9 @@ def get_watermark_mask(image, model, processor, device):
     mask = Image.new("L", image.size, 0)  # "L" mode for single-channel grayscale
     draw = ImageDraw.Draw(mask)
 
-    detection_key = '<OPEN_VOCABULARY_DETECTION>'
-    if detection_key in parsed_answer and 'bboxes' in parsed_answer[detection_key]:
-        for bbox in parsed_answer[detection_key]['bboxes']:
+    detection_key = "<OPEN_VOCABULARY_DETECTION>"
+    if detection_key in parsed_answer and "bboxes" in parsed_answer[detection_key]:
+        for bbox in parsed_answer[detection_key]["bboxes"]:
             x1, y1, x2, y2 = map(int, bbox)  # Convert float bbox to int
 
             # Calculate the area of the bounding box
@@ -64,16 +82,20 @@ def get_watermark_mask(image, model, processor, device):
 
             # If the area of the bounding box is less than 10% of the image area, include it in the mask
             if bbox_area <= 0.1 * total_image_area:
-                draw.rectangle([x1, y1, x2, y2], fill=255)  # Draw a white rectangle on the mask
+                draw.rectangle(
+                    [x1, y1, x2, y2], fill=255
+                )  # Draw a white rectangle on the mask
             else:
-                print(f"Skipping region: Bounding box covers more than 10% of the image. BBox Area: {bbox_area}, Image Area: {total_image_area}")
+                print(
+                    f"Skipping region: Bounding box covers more than 10% of the image. BBox Area: {bbox_area}, Image Area: {total_image_area}"
+                )
     else:
         print("No bounding boxes found in parsed answer.")
 
     return mask
 
 
-def process_image_with_lama(image, mask, model_manager):
+def process_image_with_lama(image: MatLike, mask: MatLike, model_manager: ModelManager):
     config = Config(
         ldm_steps=50,  # Increased steps for higher quality
         ldm_sampler=LDMSampler.ddim,
@@ -92,53 +114,78 @@ def process_image_with_lama(image, mask, model_manager):
     return result
 
 
-def main():
-    # Parse command line arguments
-    import argparse
+@click.command()
+@click.argument("input_image", type=click.Path(exists=True))
+@click.argument("output_image", type=click.Path())
+def main(input_image: str, output_image: str):
+    input_image_path = Path(input_image)
+    output_image_path = Path(output_image)
 
-    parser = argparse.ArgumentParser(description='Watermark Remover')
-    parser.add_argument('input_image', type=str, help='Path to input image')
-    parser.add_argument('output_image', type=str, help='Path to save output image')
-    args = parser.parse_args()
-
-    input_image_path = args.input_image
-    output_image_path = args.output_image
-
-    # Check if input image exists
-    if not os.path.exists(input_image_path):
-        print(f"Input image {input_image_path} does not exist.")
+    if not input_image_path.exists():
+        logger.error(f"Input not found: {input_image_path}")
         sys.exit(1)
 
-    # Load the image
-    image = Image.open(input_image_path).convert("RGB")
-
     # Load Florence2 model and processor
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    print(f"Using device: {device}")
-    florence_model = AutoModelForCausalLM.from_pretrained(
-        'microsoft/Florence-2-large', trust_remote_code=True
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    logger.info(f"Using device: {device}")
+    florence_model: AutoModelForCausalLM = AutoModelForCausalLM.from_pretrained(
+        "microsoft/Florence-2-large", trust_remote_code=True
     ).to(device)
     florence_model.eval()
-    florence_processor = AutoProcessor.from_pretrained('microsoft/Florence-2-large', trust_remote_code=True)
+    florence_processor: AutoProcessor = AutoProcessor.from_pretrained(
+        "microsoft/Florence-2-large", trust_remote_code=True
+    )
 
     # Load LaMa model
     model_manager = ModelManager(name="lama", device=device)
+    logger.info("models loaded")
 
-    # Get watermark mask
-    mask_image = get_watermark_mask(image, florence_model, florence_processor, device)
+    def handle_one(image_path: Path, output_path: Path):
+        image = Image.open(image_path).convert("RGB")
 
-    # Process image with LaMa
-    result_image = process_image_with_lama(np.array(image), np.array(mask_image), model_manager)
+        # Get watermark mask
+        mask_image = get_watermark_mask(
+            image, florence_model, florence_processor, device
+        )
 
-    # Convert the result from BGR to RGB
-    result_image_rgb = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)
+        # Process image with LaMa
+        result_image = process_image_with_lama(
+            np.array(image), np.array(mask_image), model_manager
+        )
 
-    # Convert result_image from NumPy array to PIL Image
-    result_image_pil = Image.fromarray(result_image_rgb)
-    result_image_pil.save(output_image_path)
+        result_image_rgb = cv2.cvtColor(result_image, cv2.COLOR_BGR2RGB)
+        result_image_pil = Image.fromarray(result_image_rgb)
+        result_image_pil.save(output_path)
 
-    print(f"Processed image saved to {output_image_path}")
+    if input_image_path.is_dir():
+        logger.info("handle input `{}` as directory", input_image_path)
+
+        if not output_image_path.exists():
+            logger.info("create output directory `{}`", output_image_path)
+            output_image_path.mkdir()
+
+        if output_image_path.is_file():
+            logger.error("output {} should be a directory", output_image_path)
+            raise ValueError("output should be a directory")
+
+        COMMON_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "bmp"]
+
+        def grab_all():
+            for ext in COMMON_IMAGE_EXTENSIONS:
+                yield from input_image_path.glob(f"*.{ext}")
+
+        for image_path in tqdm.tqdm(list(grab_all())):
+            handle_one(image_path, output_image_path / image_path.name)
+    else:
+        # must be a file
+        logger.info("handle input {} as file", input_image_path)
+        if output_image_path.is_dir():
+            out = output_image_path / input_image_path.name
+        else:
+            out = output_image_path
+        handle_one(input_image_path, out)
+        logger.info("output saved to {}", out)
 
 
-if __name__ == '__main__':
-    main()
+if __name__ == "__main__":
+    main()  # py-lint: disable=no-value-for-parameter

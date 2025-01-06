@@ -1,4 +1,4 @@
-name: py312
+name: py312aiwatermark
 channels:
   - nvidia
   - conda-forge

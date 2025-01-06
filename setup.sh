@@ -6,13 +6,65 @@ set -e
 # Default values
 ENV_NAME="py312"
 ENV_FILE="environment.yml"
-INSTALL_GUI=true  # Default is with GUI
+INSTALL_DIR=""
+FORCE_REINSTALL=false
+USE_DEFAULT_DIR=true
 
-# Check if the user wants to skip GUI dependencies
-if [[ "$1" == "--no-gui" ]]; then
-    INSTALL_GUI=false
-    echo "Skipping GUI dependencies..."
-fi
+# Function to detect previously used directory
+find_existing_install_dir() {
+    if [ -d "$PWD/conda_envs" ] && conda env list | grep -q "^${ENV_NAME}\\s"; then
+        echo "$PWD/conda_envs"
+    else
+        echo ""
+    fi
+}
+
+# Function to display usage
+usage() {
+    echo "Usage: $0 [options] -- [script arguments]"
+    echo "Options:"
+    echo "  --activate                Activate the Conda environment and provide instructions to deactivate it."
+    echo "  --reinstall               Reinstall the Conda environment."
+    echo "  --current-dir             Use the current directory as the root for the Conda environment."
+    echo "  --help                    Show this help message."
+    echo "Script Arguments:"
+    echo "  Any arguments after -- will be passed directly to remwm.py."
+    exit 1
+}
+
+# Parse arguments
+ACTIVATE_ONLY=false
+SCRIPT_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --activate)
+            ACTIVATE_ONLY=true
+            shift
+            ;;
+        --reinstall)
+            FORCE_REINSTALL=true
+            shift
+            ;;
+        --current-dir)
+            USE_DEFAULT_DIR=false
+            INSTALL_DIR="$PWD/conda_envs"
+            shift
+            ;;
+        --help)
+            usage
+            ;;
+        --)
+            shift
+            SCRIPT_ARGS=("$@")
+            break
+            ;;
+        *)
+            echo "Unknown option: $1"
+            usage
+            ;;
+    esac
+done
 
 # Check if Conda is installed
 if ! command -v conda &> /dev/null; then
@@ -20,12 +72,35 @@ if ! command -v conda &> /dev/null; then
     exit 1
 fi
 
-# Check if the environment already exists
-if conda env list | grep -q "^${ENV_NAME}"; then
-    echo "Environment '${ENV_NAME}' already exists. Activating it..."
-    eval "$(conda shell.bash hook)"
-    conda activate "${ENV_NAME}"
+# Determine installation directory
+if [ "$USE_DEFAULT_DIR" = false ]; then
+    echo "Using current directory as the root for Conda environments: $INSTALL_DIR"
+    export CONDA_ENVS_PATH="$INSTALL_DIR"
+    export CONDA_PKGS_DIRS="$INSTALL_DIR/pkgs"
 else
+    EXISTING_DIR=$(find_existing_install_dir)
+    if [ -n "$EXISTING_DIR" ]; then
+        echo "Detected existing installation in: $EXISTING_DIR"
+        export CONDA_ENVS_PATH="$EXISTING_DIR"
+        export CONDA_PKGS_DIRS="$EXISTING_DIR/pkgs"
+    else
+        echo "Using default Conda directory."
+    fi
+fi
+
+# Check if the environment already exists or needs to be reinstalled
+if conda env list | grep -q "^${ENV_NAME}\\s"; then
+    if [ "$FORCE_REINSTALL" = true ]; then
+        echo "Reinstalling environment '${ENV_NAME}'..."
+        conda env remove -n "${ENV_NAME}"
+    else
+        echo "Environment '${ENV_NAME}' already exists. Activating it..."
+        eval "$(conda shell.bash hook)"
+        conda activate "${ENV_NAME}"
+    fi
+fi
+
+if ! conda env list | grep -q "^${ENV_NAME}\\s"; then
     # Create the Conda environment
     echo "Creating Conda environment '${ENV_NAME}' from '${ENV_FILE}'..."
     conda env create -f "${ENV_FILE}" || {
@@ -36,35 +111,16 @@ else
     conda activate "${ENV_NAME}"
 fi
 
-# Optionally install GUI dependencies
-if [ "${INSTALL_GUI}" = true ]; then
-    echo "Installing GUI dependencies..."
-    pip install PyQt6 || {
-        echo "Failed to install PyQt6 GUI dependencies."
-        exit 1
-    }
-else
-    echo "GUI dependencies were skipped as per user request."
+if [ "$ACTIVATE_ONLY" = true ]; then
+    echo "Environment '${ENV_NAME}' activated. To deactivate, run 'conda deactivate'."
+    exit 0
 fi
 
-# Install IOPaint and transformers manually using pip
-echo "Installing iopaint and transformers manually via pip..."
-pip install iopaint transformers opencv-python-headless || {
-    echo "Failed to install iopaint or transformers."
-    exit 1
-}
+# Ensure required dependencies are installed
+pip list | grep -q PyQt6 || pip install PyQt6
+pip list | grep -q transformers || pip install transformers
+pip list | grep -q iopaint || pip install iopaint
+pip list | grep -q opencv-python-headless || pip install opencv-python-headless
 
-# Verify installation
-echo "Verifying environment and dependencies..."
-python -c "import torch, iopaint; print('Torch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('iopaint installed.')"
-
-# Start the appropriate script
-if [ "${INSTALL_GUI}" = true ]; then
-    echo "Starting GUI mode with 'remwmgui.py'..."
-    python remwmgui.py
-else
-    echo "Starting CLI mode with 'remwm.py'..."
-    python remwm.py
-fi
-
-echo "Setup and execution complete!"
+# Run remwm.py with passed arguments
+python remwm.py "${SCRIPT_ARGS[@]}"

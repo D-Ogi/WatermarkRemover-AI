@@ -4,7 +4,7 @@
 set -e
 
 # Default values
-ENV_NAME="py310"
+ENV_NAME="py312"
 ENV_FILE="environment.yml"
 INSTALL_GUI=true  # Default is with GUI
 
@@ -20,33 +20,51 @@ if ! command -v conda &> /dev/null; then
     exit 1
 fi
 
-# Create the Conda environment
-echo "Creating Conda environment '${ENV_NAME}' from '${ENV_FILE}'..."
-conda env create -f "${ENV_FILE}" || {
-    echo "Failed to create the Conda environment. If it already exists, try activating it with 'conda activate ${ENV_NAME}'."
-    exit 1
-}
-
-# Activate the Conda environment
-echo "Activating Conda environment '${ENV_NAME}'..."
-eval "$(conda shell.bash hook)"  # Ensure Conda works in non-login shells
-conda activate "${ENV_NAME}"
+# Check if the environment already exists
+if conda env list | grep -q "^${ENV_NAME}"; then
+    echo "Environment '${ENV_NAME}' already exists. Activating it..."
+    eval "$(conda shell.bash hook)"
+    conda activate "${ENV_NAME}"
+else
+    # Create the Conda environment
+    echo "Creating Conda environment '${ENV_NAME}' from '${ENV_FILE}'..."
+    conda env create -f "${ENV_FILE}" || {
+        echo "Failed to create the Conda environment."
+        exit 1
+    }
+    eval "$(conda shell.bash hook)"
+    conda activate "${ENV_NAME}"
+fi
 
 # Optionally install GUI dependencies
 if [ "${INSTALL_GUI}" = true ]; then
     echo "Installing GUI dependencies..."
-    conda install -y pyqt || {
-        echo "Failed to install GUI dependencies."
+    pip install PyQt6 || {
+        echo "Failed to install PyQt6 GUI dependencies."
         exit 1
     }
 else
     echo "GUI dependencies were skipped as per user request."
 fi
 
+# Install IOPaint and transformers manually using pip
+echo "Installing iopaint and transformers manually via pip..."
+pip install iopaint transformers opencv-python-headless || {
+    echo "Failed to install iopaint or transformers."
+    exit 1
+}
+
 # Verify installation
-echo "Conda environment '${ENV_NAME}' is ready. Use 'conda activate ${ENV_NAME}' to activate it."
+echo "Verifying environment and dependencies..."
+python -c "import torch, iopaint; print('Torch version:', torch.__version__); print('CUDA available:', torch.cuda.is_available()); print('iopaint installed.')"
+
+# Start the appropriate script
 if [ "${INSTALL_GUI}" = true ]; then
-    echo "GUI dependencies are installed."
+    echo "Starting GUI mode with 'remwmgui.py'..."
+    python remwmgui.py
 else
-    echo "GUI dependencies are not installed."
+    echo "Starting CLI mode with 'remwm.py'..."
+    python remwm.py
 fi
+
+echo "Setup and execution complete!"

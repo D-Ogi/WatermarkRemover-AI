@@ -5,8 +5,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 
+![image](https://github.com/user-attachments/assets/8f7fb600-695f-4dd7-958c-0cff516b5c7a)
 
-![image](https://github.com/user-attachments/assets/df3203ed-057e-499b-86bc-f9e96be66c1e)
+Example of watermark removal with LaMa inpainting
 
 ![image](https://github.com/user-attachments/assets/e89825fb-3b14-4358-96f3-feb526908ad3)
 

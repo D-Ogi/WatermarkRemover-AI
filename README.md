@@ -75,7 +75,7 @@
 
 1. **Clone the Repository:**
    ```bash
-   git clone https://github.com/yourusername/WatermarkRemover-AI.git
+   git clone https://github.com/D-Ogi/WatermarkRemover-AI.git
    cd WatermarkRemover-AI
    ```
 

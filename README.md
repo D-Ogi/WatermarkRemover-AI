@@ -28,6 +28,7 @@ Example of watermark removal with LaMa inpainting
   - [Manual Way](#manual-way)
   - [Using the GUI](#using-the-gui)
   - [Using the CLI](#using-the-cli)
+- [Upgrade Notes](#upgrade-notes)
 - [Alpha Masking](#alpha-masking)
 - [Contributing](#contributing)
 - [License](#license)
@@ -175,6 +176,30 @@ Example of watermark removal with LaMa inpainting
    ```bash
    python remwm.py ./input_images ./output_images --overwrite --max-bbox-percent=15 --force-format=PNG
    ```
+---
+
+### Upgrade Notes
+
+If you have previously used an older version of the repository or set up an incorrect Conda environment, follow these steps to upgrade:
+
+1. **Update the Repository**:
+   ```bash
+   git pull
+   ```
+
+2. **Remove the Old Environment**:
+   ```bash
+   conda deactivate
+   conda env remove -n py312
+   ```
+
+3. **Run the Setup Script**:
+   ```bash
+   bash setup.sh
+   ```
+
+This will recreate the correct environment (`py312aiwatermark`) and ensure all dependencies are up-to-date.
+
 
 ---
 

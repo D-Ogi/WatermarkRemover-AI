@@ -4,7 +4,7 @@
 set -e
 
 # Default values
-ENV_NAME="py312"
+ENV_NAME="py312aiwatermark"
 ENV_FILE="environment.yml"
 INSTALL_DIR=""
 FORCE_REINSTALL=false

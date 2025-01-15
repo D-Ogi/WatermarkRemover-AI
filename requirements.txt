@@ -1,3 +1,0 @@
-IOPaint 
-# not actually needed if you don't plan to use GUI
-# PyQt6

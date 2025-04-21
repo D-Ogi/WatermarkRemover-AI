@@ -88,7 +88,15 @@ Example of watermark removal with LaMa inpainting
 
    The `setup.sh` script automatically sets up the environment, installs dependencies, and launches the GUI application. It also provides convenient options for CLI usage.
 
-3. **Fast-Track Options:**
+3. **Download the LaMA Model:**
+   ```bash
+   conda activate py312aiwatermark
+   iopaint download --model lama
+   ```
+
+   The LaMA inpainting model files aren't included in the repository and must be downloaded separately (approximately 196MB). 
+
+5. **Fast-Track Options:**
    - **To Use the CLI Immediately**: After running `setup.sh`, you can use the CLI directly without activating the environment manually:
      ```bash
      ./setup.sh input_path output_path [options]

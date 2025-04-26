@@ -157,7 +157,7 @@ def main(input_path: str, output_path: str, overwrite: bool, transparent: bool, 
         total_images = len(images)
 
         for idx, image_path in enumerate(tqdm.tqdm(images, desc="Processing images")):
-            output_file = output_path / image_path.stem
+            output_file = output_path / image_path.name
             handle_one(image_path, output_file)
             progress = int((idx + 1) / total_images * 100)
             print(f"input_path:{image_path}, output_path:{output_file}, overall_progress:{progress}")

@@ -1,0 +1,20 @@
+# Pillow pinned to match iopaint's requirement
+Pillow==9.5.0  # Downgraded from >=10.0.0 [1][9]
+
+# Other dependencies (unchanged)
+numpy>=1.23.0
+opencv-python-headless>=4.8.0
+PyQt6>=6.5.0
+PyQt6-Qt6>=6.5.0
+PyQt6-sip>=13.5.0
+transformers>=4.36.2
+iopaint>=1.1.4  # Now compatible with Pillow 9.5.0
+tqdm>=4.66.0
+scikit-image>=0.21.0
+scipy>=1.11.0
+requests>=2.31.0
+matplotlib>=3.7.0
+torch>=2.1.0
+torchvision>=0.16.0
+torchaudio>=2.1.0
+rich>=13.4.0

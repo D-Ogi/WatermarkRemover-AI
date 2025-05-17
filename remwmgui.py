@@ -4,6 +4,9 @@ import subprocess
 import psutil
 import yaml
 import torch
+import time
+import threading
+import shutil
 from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit,
@@ -19,22 +22,61 @@ class Worker(QObject):
     log_signal = pyqtSignal(str)
     progress_signal = pyqtSignal(int)
     finished_signal = pyqtSignal()
+    error_signal = pyqtSignal(str)
 
     def __init__(self, process):
         super().__init__()
         self.process = process
+        self.running = True
 
     def run(self):
         try:
-            for line in iter(self.process.stdout.readline, ""):
-                self.log_signal.emit(line)
-                if "overall_progress:" in line:
-                    progress = int(line.strip().split("overall_progress:")[1].strip())
-                    self.progress_signal.emit(progress)
-
-            self.process.stdout.close()
+            # Créer un thread pour lire stderr
+            error_thread = threading.Thread(target=self.read_stderr)
+            error_thread.daemon = True
+            error_thread.start()
+            
+            # Lire stdout avec un timeout pour éviter les blocages
+            while self.running and self.process.poll() is None:
+                line = self.process.stdout.readline()
+                if line:
+                    self.log_signal.emit(line)
+                    if "overall_progress:" in line:
+                        try:
+                            progress = int(line.strip().split("overall_progress:")[1].strip())
+                            self.progress_signal.emit(progress)
+                        except (ValueError, IndexError) as e:
+                            self.log_signal.emit(f"Erreur de parsing de la progression: {str(e)}")
+                else:
+                    # Petite pause pour éviter d'utiliser trop de CPU
+                    time.sleep(0.1)
+            
+            # Vérifier si le processus s'est terminé normalement
+            if self.process.returncode is not None and self.process.returncode != 0:
+                self.error_signal.emit(f"Le processus s'est terminé avec le code d'erreur: {self.process.returncode}")
+                
+        except Exception as e:
+            self.error_signal.emit(f"Erreur dans le worker: {str(e)}")
         finally:
+            # S'assurer que les flux sont fermés
+            try:
+                self.process.stdout.close()
+                self.process.stderr.close()
+            except:
+                pass
             self.finished_signal.emit()
+    
+    def read_stderr(self):
+        """Lire stderr dans un thread séparé pour éviter les blocages"""
+        try:
+            for line in iter(self.process.stderr.readline, ""):
+                if line:
+                    self.log_signal.emit(f"ERREUR: {line}")
+        except:
+            pass
+
+    def stop(self):
+        self.running = False
 
 class WatermarkRemoverGUI(QMainWindow):
     def __init__(self):
@@ -43,7 +85,7 @@ class WatermarkRemoverGUI(QMainWindow):
         self.setGeometry(100, 100, 800, 600)
 
         # Initialize UI elements
-        self.radio_single = QRadioButton("Process Single Image")
+        self.radio_single = QRadioButton("Process Single File")
         self.radio_batch = QRadioButton("Process Directory")
         self.radio_single.setChecked(True)
         self.mode_group = QButtonGroup()
@@ -63,12 +105,16 @@ class WatermarkRemoverGUI(QMainWindow):
         self.force_format_png = QRadioButton("PNG")
         self.force_format_webp = QRadioButton("WEBP")
         self.force_format_jpg = QRadioButton("JPG")
+        self.force_format_mp4 = QRadioButton("MP4")
+        self.force_format_avi = QRadioButton("AVI")
         self.force_format_none = QRadioButton("None")
         self.force_format_none.setChecked(True)
         self.force_format_group = QButtonGroup()
         self.force_format_group.addButton(self.force_format_png)
         self.force_format_group.addButton(self.force_format_webp)
         self.force_format_group.addButton(self.force_format_jpg)
+        self.force_format_group.addButton(self.force_format_mp4)
+        self.force_format_group.addButton(self.force_format_avi)
         self.force_format_group.addButton(self.force_format_none)
 
         self.progress_bar = QProgressBar(self)
@@ -91,6 +137,7 @@ class WatermarkRemoverGUI(QMainWindow):
 
         self.process = None
         self.thread = None
+        self.worker = None
 
         # Layout
         layout = QVBoxLayout()
@@ -124,6 +171,8 @@ class WatermarkRemoverGUI(QMainWindow):
         force_format_layout.addWidget(self.force_format_png)
         force_format_layout.addWidget(self.force_format_webp)
         force_format_layout.addWidget(self.force_format_jpg)
+        force_format_layout.addWidget(self.force_format_mp4)
+        force_format_layout.addWidget(self.force_format_avi)
         force_format_layout.addWidget(self.force_format_none)
         options_layout.addLayout(force_format_layout)
 
@@ -209,11 +258,23 @@ class WatermarkRemoverGUI(QMainWindow):
 
     def browse_input(self):
         if self.radio_single.isChecked():
-            path, _ = QFileDialog.getOpenFileName(self, "Select Input Image", "", "Images (*.png *.jpg *.jpeg *.webp)")
+            path, _ = QFileDialog.getOpenFileName(
+                self, 
+                "Select Input File", 
+                "", 
+                "All Supported Files (*.png *.jpg *.jpeg *.webp *.mp4 *.avi *.mov *.mkv *.flv *.wmv *.webm);;Images (*.png *.jpg *.jpeg *.webp);;Videos (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.webm)"
+            )
         else:
             path = QFileDialog.getExistingDirectory(self, "Select Input Directory")
         if path:
             self.input_path.setText(path)
+            # Update format options based on file type
+            if path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm')):
+                self.force_format_mp4.setEnabled(True)
+                self.force_format_avi.setEnabled(True)
+                if self.transparent_checkbox.isChecked():
+                    self.transparent_checkbox.setChecked(False)
+                    QMessageBox.information(self, "Info", "Transparency is not supported for videos. Disabled.")
 
     def browse_output(self):
         path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
@@ -228,6 +289,28 @@ class WatermarkRemoverGUI(QMainWindow):
             QMessageBox.critical(self, "Error", "Input and Output paths are required.")
             return
 
+        # Check if input is a video 
+        is_video = input_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'))
+        
+        # Check if transparency is enabled for video
+        if is_video and self.transparent_checkbox.isChecked():
+            QMessageBox.warning(self, "Warning", "Transparency is not supported for videos. Continuing with non-transparent processing.")
+            self.transparent_checkbox.setChecked(False)
+            
+        # Vérifier si FFmpeg est disponible pour les vidéos
+        if is_video:
+            ffmpeg_available = self.check_ffmpeg_available()
+            if not ffmpeg_available:
+                response = QMessageBox.warning(
+                    self, 
+                    "FFmpeg non disponible", 
+                    "FFmpeg n'est pas disponible sur votre système. Les vidéos traitées n'auront pas de son.\n\nVoulez-vous continuer quand même?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No
+                )
+                if response == QMessageBox.StandardButton.No:
+                    return
+
         overwrite = "--overwrite" if self.overwrite_checkbox.isChecked() else ""
         transparent = "--transparent" if self.transparent_checkbox.isChecked() else ""
         max_bbox_percent = self.max_bbox_percent_slider.value()
@@ -238,6 +321,10 @@ class WatermarkRemoverGUI(QMainWindow):
             force_format = "WEBP"
         elif self.force_format_jpg.isChecked():
             force_format = "JPG"
+        elif self.force_format_mp4.isChecked():
+            force_format = "MP4"
+        elif self.force_format_avi.isChecked():
+            force_format = "AVI"
 
         force_format_option = f"--force-format={force_format}" if force_format != "None" else ""
 
@@ -255,14 +342,15 @@ class WatermarkRemoverGUI(QMainWindow):
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
+            bufsize=1,  # Line buffered
             env={**os.environ, "PYTHONUNBUFFERED": "1"}
         )
-
 
         self.worker = Worker(self.process)
         self.worker.log_signal.connect(self.update_logs)
         self.worker.progress_signal.connect(self.update_progress_bar)
         self.worker.finished_signal.connect(self.reset_ui)
+        self.worker.error_signal.connect(self.handle_error)
 
         self.thread = QThread()
         self.worker.moveToThread(self.thread)
@@ -280,9 +368,25 @@ class WatermarkRemoverGUI(QMainWindow):
 
     def stop_processing(self):
         if self.process:
-            self.process.terminate()
-            self.process.wait()
-            self.reset_ui()
+            try:
+                if self.worker:
+                    self.worker.stop()
+                self.process.terminate()
+                # Donner un peu de temps au processus pour se terminer proprement
+                QTimer.singleShot(500, lambda: self.force_kill_if_needed())
+            except Exception as e:
+                logger.error(f"Erreur lors de l'arrêt du processus: {str(e)}")
+                self.reset_ui()
+
+    def force_kill_if_needed(self):
+        """Force l'arrêt du processus s'il est encore en cours d'exécution"""
+        if self.process and self.process.poll() is None:
+            try:
+                self.process.kill()
+                self.process.wait(timeout=1)
+            except:
+                pass
+        self.reset_ui()
 
     def reset_ui(self):
         self.stop_button.setDisabled(True)
@@ -292,6 +396,7 @@ class WatermarkRemoverGUI(QMainWindow):
             self.thread.wait()
         self.process = None
         self.thread = None
+        self.worker = None
 
     def save_config(self):
         config = {
@@ -300,7 +405,12 @@ class WatermarkRemoverGUI(QMainWindow):
             "overwrite": self.overwrite_checkbox.isChecked(),
             "transparent": self.transparent_checkbox.isChecked(),
             "max_bbox_percent": self.max_bbox_percent_slider.value(),
-            "force_format": "PNG" if self.force_format_png.isChecked() else "WEBP" if self.force_format_webp.isChecked() else "JPG" if self.force_format_jpg.isChecked() else "None",
+            "force_format": "PNG" if self.force_format_png.isChecked() 
+                      else "WEBP" if self.force_format_webp.isChecked() 
+                      else "JPG" if self.force_format_jpg.isChecked()
+                      else "MP4" if self.force_format_mp4.isChecked()
+                      else "AVI" if self.force_format_avi.isChecked()
+                      else "None",
             "mode": "single" if self.radio_single.isChecked() else "batch"
         }
         with open(CONFIG_FILE, "w") as f:
@@ -322,6 +432,10 @@ class WatermarkRemoverGUI(QMainWindow):
                     self.force_format_webp.setChecked(True)
                 elif force_format == "JPG":
                     self.force_format_jpg.setChecked(True)
+                elif force_format == "MP4":
+                    self.force_format_mp4.setChecked(True)
+                elif force_format == "AVI":
+                    self.force_format_avi.setChecked(True)
                 else:
                     self.force_format_none.setChecked(True)
                 mode = config.get("mode", "single")
@@ -330,9 +444,27 @@ class WatermarkRemoverGUI(QMainWindow):
                 else:
                     self.radio_batch.setChecked(True)
 
+    def handle_error(self, error_message):
+        """Gère les erreurs signalées par le worker"""
+        self.logs.append(f"<span style='color:red'>{error_message}</span>")
+        # Rendre les logs visibles en cas d'erreur
+        if not self.logs.isVisible():
+            self.toggle_logs_button.setChecked(True)
+            self.toggle_logs(True)
+        QMessageBox.critical(self, "Erreur", f"Une erreur est survenue: {error_message}")
+
     def closeEvent(self, event):
         self.save_config()
         event.accept()
+
+    def check_ffmpeg_available(self):
+        """Vérifie si FFmpeg est disponible sur le système"""
+        try:
+            # Essayer d'exécuter ffmpeg -version pour vérifier s'il est installé
+            subprocess.check_output(["ffmpeg", "-version"], stderr=subprocess.STDOUT)
+            return True
+        except (subprocess.SubprocessError, FileNotFoundError):
+            return False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

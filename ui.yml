@@ -1,0 +1,8 @@
+force_format: None
+input_path: D:\NSFW-pour-models-ia\Corinna Kopf - corinnakopf - @OnlyFansCloudd on
+  Telegram\Vids
+max_bbox_percent: 100
+mode: batch
+output_path: "D:\\mod\xE8le_ia\\Lya_mercier\\Onlyfan\\video\\nonswapeface"
+overwrite: true
+transparent: false

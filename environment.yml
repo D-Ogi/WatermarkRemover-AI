@@ -3,6 +3,7 @@ channels:
   - nvidia
   - conda-forge
   - defaults
+  - iopaint
 dependencies:
   - python=3.12
   - pip
@@ -13,8 +14,4 @@ dependencies:
   - pillow
   - opencv
   - pip:
-    - --index-url https://download.pytorch.org/whl/nightly/cu128
-    - --pre 
-    - torch
-    - torchvision 
-    - torchaudio  
+      - --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu126

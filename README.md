@@ -16,13 +16,10 @@ It uses Florence-2 from Microsoft for watermark identification and LaMA for inpa
 
 ![App Screenshot](assets/screenshot-preview.png)
 
-## Demo BEFORE
+## Demo
 
-https://github.com/user-attachments/assets/b301bc94-f152-4e36-a753-5245b72f9287
 
-## Demo AFTER
-
-https://github.com/user-attachments/assets/ce1ed0d0-1742-44dc-8379-09a52d40c9a6
+https://github.com/user-attachments/assets/505be2a8-8eda-4def-90b6-5a4ceefee456
 
 
 ---
@@ -154,4 +151,5 @@ Contributions are welcome! Feel free to:
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
 

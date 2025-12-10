@@ -1,0 +1,55 @@
+# User config (contains local paths)
+ui.yml
+
+# Embedded Python (Windows - created by setup.ps1)
+python/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Models cache (large files)
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+.cache/
+huggingface/

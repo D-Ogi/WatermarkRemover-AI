@@ -1,117 +1,153 @@
 # WatermarkRemover-AI
 
-**Outil de suppression de filigranes alimenté par l'IA utilisant les modèles Florence-2 et LaMA**
+**AI-Powered Watermark Removal Tool using Florence-2 and LaMA Models**
 
-![Exemple de suppression de filigrane](https://raw.githubusercontent.com/D-Ogi/WatermarkRemover-AI/main/docs/images/demo.jpg)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-## Aperçu
+---
 
-`WatermarkRemover-AI` est une application de pointe qui utilise des modèles d'IA pour détecter et supprimer les filigranes de manière précise. Elle utilise Florence-2 de Microsoft pour identifier les filigranes et LaMA pour le remplissage naturel des régions supprimées. Le logiciel propose à la fois une interface en ligne de commande (CLI) et une interface graphique (GUI) basée sur PyQt6, le rendant accessible aux utilisateurs novices et avancés.
+## Overview
 
-## Caractéristiques
+`WatermarkRemover-AI` is a cutting-edge application that leverages AI models for precise watermark detection and seamless removal. Perfect for removing watermarks from AI-generated videos like Sora, Sora 2, Runway, and others.
 
-* **Modes multiples** : Traitez des fichiers individuels ou des dossiers entiers d'images et de vidéos.
-* **Détection avancée de filigranes** : Utilise la détection à vocabulaire ouvert de Florence-2 pour une identification précise des filigranes.
-* **Inpainting sans couture** : Emploie LaMA pour un remplissage de haute qualité et sensible au contexte.
-* **Support vidéo** : Traitement des fichiers vidéo image par image pour supprimer les filigranes.
-* **Sortie personnalisable** :  
-   * Configurez la taille maximale de la boîte englobante pour la détection des filigranes.  
-   * Définissez la transparence pour les régions de filigrane (images uniquement).  
-   * Forcez des formats de sortie spécifiques (PNG, WEBP, JPG pour les images; MP4, AVI pour les vidéos).
-* **Suivi de la progression** : Mises à jour de la progression en temps réel en mode GUI et CLI.
-* **Support du mode sombre** : L'interface graphique s'adapte automatiquement aux paramètres du mode sombre du système.
-* **Gestion efficace des ressources** : Optimisé pour l'accélération GPU à l'aide de CUDA (optionnel).
+It uses Florence-2 from Microsoft for watermark identification and LaMA for inpainting to fill in the removed regions naturally. The software features a modern GUI built with PyWebview for an accessible and intuitive experience.
 
-## Installation rapide
+## Screenshot
 
-Consultez le fichier [DEMARRAGE_RAPIDE.md](./DEMARRAGE_RAPIDE.md) pour une installation et une mise en route rapides.
+![App Screenshot](assets/screenshot-preview.png)
 
-Pour une installation détaillée, référez-vous au fichier [INSTALLATION_FR.md](./INSTALLATION_FR.md).
+## Demo
 
-### Prérequis
+| Before | After |
+|--------|-------|
+| [clip-pre.mp4](assets/clip-pre.mp4) | [clip-after.mp4](assets/clip-after.mp4) |
 
-* Conda/Miniconda installé.
-* CUDA (optionnel pour l'accélération GPU ; l'application fonctionne bien sur CPU également).
+---
 
-### Installation en un clic
+## Features
 
-Exécutez le script PowerShell d'installation :
+- **Smart Detection** - AI-powered watermark detection using Florence-2
+- **Seamless Removal** - LaMA inpainting for natural-looking results
+- **Video Support** - Process videos with two-pass detection and audio preservation
+- **AI Video Ready** - Remove watermarks from Sora, Sora 2, Runway, and other AI-generated videos
+- **Batch Processing** - Handle entire folders at once
+- **Preview Mode** - Preview detected watermarks before processing
+- **Fade In/Out Handling** - Extend masks for watermarks that fade in/out
+- **GPU Acceleration** - CUDA support for faster processing
+
+---
+
+## Installation
+
+### Windows
+
+The setup script downloads a portable Python environment automatically - no system Python required.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File install_windows.ps1
+git clone https://github.com/D-Ogi/WatermarkRemover-AI.git
+cd WatermarkRemover-AI
+.\setup.ps1
 ```
 
-Ce script installe automatiquement toutes les dépendances et télécharge le modèle LaMA nécessaire.
+After setup, double-click `run.bat` to launch the app.
 
-## Utilisation
+### Linux / macOS
 
-### Utilisation de l'interface graphique (GUI)
+Requires Python 3.10+ installed on your system.
 
-1. **Lancez l'application** avec :  
-   ```
-   conda activate py312aiwatermark
-   python remwmgui.py
-   ```
+```bash
+git clone https://github.com/D-Ogi/WatermarkRemover-AI.git
+cd WatermarkRemover-AI
+chmod +x setup.sh
+./setup.sh
+```
 
-2. **Configurez les paramètres** :  
-   * **Mode** : Sélectionnez "Process Single File" ou "Process Directory"  
-   * **Chemins** : Parcourez et définissez les répertoires d'entrée/sortie  
-   * **Options** : 
-     * Activer l'écrasement des fichiers existants
-     * Activer la transparence pour les régions de filigrane (images uniquement)
-     * Ajuster la taille maximale de la boîte englobante
-   * **Format de sortie** : Choisissez entre PNG, WEBP, JPG pour les images, MP4, AVI pour les vidéos, ou conserver le format d'origine
+After setup:
+```bash
+source venv/bin/activate
+python remwmgui.py
+```
 
-3. **Commencez le traitement** :  
-   * Cliquez sur "Start" pour démarrer
-   * Surveillez la progression et les logs dans l'interface
+### Optional: FFmpeg
 
-### Utilisation en ligne de commande (CLI)
+Install FFmpeg to preserve audio when processing videos:
+- **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH
+- **Linux**: `sudo apt install ffmpeg`
+- **macOS**: `brew install ffmpeg`
 
-1. **Commande de base** :  
-   ```
-   python remwm.py chemin_entrée chemin_sortie
-   ```
+---
 
-2. **Options** :  
-   * `--overwrite` : Écrase les fichiers existants
-   * `--transparent` : Rend les régions de filigrane transparentes (images uniquement)
-   * `--max-bbox-percent` : Définit la taille maximale de la boîte englobante (par défaut : 10%)
-   * `--force-format` : Force le format de sortie (PNG, WEBP, JPG pour les images; MP4, AVI pour les vidéos)
+## Usage
 
-3. **Exemples** :  
-   ```
-   python remwm.py ./images_entrée ./images_sortie --overwrite --max-bbox-percent=15 --force-format=PNG
-   ```
-   
-   ```
-   python remwm.py ./video_entrée.mp4 ./video_sortie.mp4 --max-bbox-percent=15 --force-format=MP4
-   ```
+### GUI Mode
 
-## Remarques sur la mise à niveau
+1. Run the app (`run.bat` on Windows, or `python remwmgui.py`)
+2. Select your mode (Single File or Batch)
+3. Set input and output paths
+4. Configure settings as needed
+5. Hit **LET HIM COOK**
 
-Si vous avez déjà utilisé une version antérieure du dépôt, suivez ces étapes pour mettre à niveau :
+### CLI Mode
 
-1. **Mettez à jour le dépôt** :  
-   ```
-   git pull
-   ```
+```bash
+# Basic usage
+python remwm.py input.png output_folder/
 
-2. **Supprimez l'ancien environnement** :  
-   ```
-   conda deactivate
-   conda env remove -n py312
-   ```
+# With options
+python remwm.py ./images ./output --overwrite --max-bbox-percent=15 --force-format=PNG
 
-3. **Exécutez le script d'installation** :  
-   ```
-   powershell -ExecutionPolicy Bypass -File install_windows.ps1
-   ```
+# Process video with two-pass detection
+python remwm.py video.mp4 ./output --detection-skip=3 --fade-in=0.5 --fade-out=0.5
 
-## Problèmes courants
+# Preview mode (detect without processing)
+python remwm.py input.png --preview
+```
 
-Consultez le fichier [INSTALLATION_FR.md](./INSTALLATION_FR.md) pour les solutions aux problèmes courants.
+### CLI Options
 
-## Licence
+| Option | Description |
+|--------|-------------|
+| `--overwrite` | Overwrite existing files |
+| `--transparent` | Make watermark regions transparent (images only) |
+| `--max-bbox-percent` | Max detection size as % of image (default: 10) |
+| `--force-format` | Force output format (PNG, WEBP, JPG, MP4, AVI) |
+| `--detection-prompt` | Custom detection prompt (default: "watermark") |
+| `--detection-skip` | Detect every N frames for videos (1-10, default: 1) |
+| `--fade-in` | Extend mask backwards by N seconds (for fade-in watermarks) |
+| `--fade-out` | Extend mask forwards by N seconds (for fade-out watermarks) |
+| `--preview` | Preview detected watermarks without processing |
 
-Ce projet est sous licence MIT. Voir le fichier LICENSE pour plus de détails. 
+---
+
+## Video Processing
+
+- **Supported formats:** MP4, AVI, MOV, MKV, FLV, WMV, WEBM
+- **Audio preservation:** Requires FFmpeg installed
+- **Two-pass mode:** Faster processing with `--detection-skip` > 1
+- **Fade handling:** Use `--fade-in` / `--fade-out` for watermarks that appear/disappear gradually
+
+---
+
+## Tech Stack
+
+- **Florence-2** - Microsoft's vision model for watermark detection
+- **LaMA** - Large Mask Inpainting model
+- **PyWebview** - Cross-platform webview wrapper
+- **Alpine.js** - Lightweight JavaScript framework for UI
+- **PyTorch** - Deep learning backend
+
+---
+
+## Contributing
+
+Contributions are welcome! Feel free to:
+
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+---
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.

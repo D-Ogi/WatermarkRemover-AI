@@ -1,0 +1,911 @@
+/* =========================================
+   THEME: SLAY QUEEN (Peak McBling / Y2K)
+   ========================================= */
+
+body.theme-slay {
+    background: linear-gradient(-45deg, #ff00cc, #333399, #ff1493, #4c1d95);
+    background-size: 400% 400%;
+    animation: gradientBG 15s ease infinite;
+    font-family: 'Inter', sans-serif;
+    color: white;
+}
+
+@keyframes gradientBG {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body.theme-slay .crt::before { display: none !important; }
+
+body.theme-slay .fixed.inset-0.z-0 { display: none !important; }
+
+/* Typography "VOGUE" */
+body.theme-slay .font-glitch {
+    font-family: 'Playfair Display', serif !important;
+    font-style: italic;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    background: linear-gradient(to bottom, #fff, #ffc0cb);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 10px rgba(255, 105, 180, 0.8));
+    font-size: 2.8rem !important;
+}
+
+/* UI Panels - Frosted Glass */
+body.theme-slay aside,
+body.theme-slay .bg-black\/60,
+body.theme-slay .bg-card,
+body.theme-slay .glass-panel {
+    background: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(20px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.5) !important;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37) !important;
+    border-radius: 20px !important;
+}
+
+/* Lipgloss Buttons (Main) */
+body.theme-slay button.bg-neon-green {
+    background: linear-gradient(180deg, #ff69b4 0%, #ff1493 50%, #c71585 100%) !important;
+    border: 2px solid rgba(255,255,255,0.4) !important;
+    border-radius: 9999px !important;
+    color: white !important;
+    font-weight: 900 !important;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 2px rgba(0,0,0,0.2);
+    box-shadow:
+        inset 0 2px 5px rgba(255,255,255,0.4),
+        inset 0 -2px 5px rgba(0,0,0,0.2),
+        0 5px 15px rgba(255, 20, 147, 0.5)
+        !important;
+    transition: all 0.2s ease;
+}
+
+body.theme-slay button.bg-neon-green:hover {
+    transform: scale(1.02) translateY(-2px);
+    box-shadow: 0 10px 25px rgba(255, 20, 147, 0.7) !important;
+}
+
+/* Secondary Buttons */
+body.theme-slay button:not(.bg-neon-green):not(.w-12):not(.rounded-full) {
+    background: rgba(255, 255, 255, 0.15) !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 15px !important;
+    color: white !important;
+    font-weight: 600 !important;
+}
+body.theme-slay button:hover:not(.bg-neon-green):not(.w-12):not(.rounded-full) {
+    background: rgba(255, 255, 255, 0.3) !important;
+    border-color: #ff69b4 !important;
+}
+
+/* Override monospace font */
+body.theme-slay .font-mono,
+body.theme-slay select,
+body.theme-slay input {
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Inputs */
+body.theme-slay input[type="text"],
+body.theme-slay select {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border: 2px solid #ff69b4 !important;
+    border-radius: 12px !important;
+    color: white !important;
+    padding: 10px !important;
+}
+body.theme-slay input:focus {
+    box-shadow: 0 0 15px #ff69b4 !important;
+    outline: none !important;
+}
+
+/* Text Colors */
+body.theme-slay .text-neon-green { color: #ff00ff !important; text-shadow: 0 0 5px #ff00ff; }
+body.theme-slay .text-neon-cyan { color: #00ffff !important; text-shadow: 0 0 5px #00ffff; }
+body.theme-slay .text-gray-400,
+body.theme-slay .text-gray-500 { color: rgba(255,255,255,0.7) !important; }
+
+/* Toggle Switches */
+body.theme-slay button.rounded-full {
+    background-color: #333 !important;
+    border: 2px solid #ff69b4 !important;
+}
+body.theme-slay button.rounded-full.bg-neon-pink,
+body.theme-slay button.rounded-full.bg-neon-green {
+    background-color: #ff1493 !important;
+    box-shadow: 0 0 10px #ff1493 !important;
+}
+
+/* Slider */
+body.theme-slay input[type="range"] {
+    accent-color: #ff69b4 !important;
+    height: 6px !important;
+}
+
+/* Marquee Bar - Fashion Police Tape */
+body.theme-slay .bg-neon-pink {
+    background: repeating-linear-gradient(
+        45deg,
+        #ff1493,
+        #ff1493 10px,
+        #000 10px,
+        #000 20px
+    ) !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 900 !important;
+    text-shadow: 2px 2px 0 #000;
+    padding: 5px 0 !important;
+}
+
+/* Terminal / Logs */
+body.theme-slay #logs-container {
+    background: rgba(0,0,0,0.5) !important;
+    border: 1px solid rgba(255,105,180,0.3) !important;
+    border-radius: 12px !important;
+    font-family: 'Inter', sans-serif !important;
+}
+body.theme-slay #logs-container div {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Dropzone */
+body.theme-slay .border-dashed {
+    border: 2px dashed #ff69b4 !important;
+    background: radial-gradient(circle, rgba(255,105,180,0.1) 0%, rgba(0,0,0,0) 70%) !important;
+}
+body.theme-slay .border-dashed:hover {
+    background: radial-gradient(circle, rgba(255,105,180,0.2) 0%, rgba(0,0,0,0) 70%) !important;
+    box-shadow: 0 0 20px rgba(255,105,180,0.3) inset !important;
+}
+
+/* Scrollbar */
+body.theme-slay ::-webkit-scrollbar-thumb {
+    background: #ff69b4;
+    border-radius: 99px;
+}
+body.theme-slay ::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.2);
+}
+
+/* =========================================
+   THEME: SIGMA GRINDSET (Crypto Bro)
+   ========================================= */
+body.theme-sigma {
+    background-color: #0b0f19 !important;
+    font-family: 'Oswald', sans-serif !important;
+    letter-spacing: 0.5px;
+}
+
+body.theme-sigma * {
+    border-radius: 0px !important;
+}
+
+body.theme-sigma .crt::before { display: none !important; }
+
+body.theme-sigma .font-glitch {
+    font-family: 'Oswald', sans-serif !important;
+    font-weight: 900;
+    text-transform: uppercase;
+    background: linear-gradient(to right, #f7931a, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 0);
+}
+
+body.theme-sigma .text-neon-green { color: #00ff00 !important; }
+body.theme-sigma .bg-neon-green { background-color: #1a56db !important; }
+body.theme-sigma .text-neon-cyan { color: #f7931a !important; }
+
+body.theme-sigma .fixed {
+    background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+}
+
+/* Override monospace font */
+body.theme-sigma .font-mono,
+body.theme-sigma select,
+body.theme-sigma input {
+    font-family: 'Oswald', sans-serif !important;
+}
+
+/* =========================================
+   THEME: WITCHTOK (Zodiakara)
+   ========================================= */
+body.theme-witch {
+    background-color: #1a0b2e !important;
+    font-family: 'Cinzel', serif !important;
+}
+
+body.theme-witch .font-glitch {
+    font-family: 'Cinzel', serif !important;
+    text-shadow: 0 0 10px #b19cd9;
+}
+
+body.theme-witch .text-neon-green { color: #9370db !important; }
+body.theme-witch .bg-neon-green { background-color: #4b0082 !important; }
+body.theme-witch .text-neon-cyan { color: #e6e6fa !important; }
+body.theme-witch .bg-neon-pink { background-color: #2f1b4e !important; }
+
+body.theme-witch .glass-panel,
+body.theme-witch aside,
+body.theme-witch .bg-black\/60 {
+    background: rgba(30, 20, 50, 0.7) !important;
+    border-color: rgba(147, 112, 219, 0.3) !important;
+    backdrop-filter: blur(8px) contrast(120%);
+}
+
+body.theme-witch .fixed::after {
+    content: "";
+    position: absolute;
+    top: 20%; left: 80%;
+    color: white; opacity: 0.5; font-size: 20px;
+}
+
+/* Override monospace font */
+body.theme-witch .font-mono,
+body.theme-witch select,
+body.theme-witch input {
+    font-family: 'Cinzel', serif !important;
+}
+
+/* =========================================
+   THEME: KORPO BADDIE (LinkedIn)
+   ========================================= */
+body.theme-korpo {
+    background-color: #f3f4f6 !important;
+    color: #1f2937 !important;
+    font-family: 'Arial', sans-serif !important;
+}
+
+body.theme-korpo .crt::before { display: none !important; }
+
+body.theme-korpo .text-white { color: #111827 !important; }
+body.theme-korpo .text-gray-300 { color: #4b5563 !important; }
+body.theme-korpo .text-gray-500 { color: #6b7280 !important; }
+body.theme-korpo .border-white\/10 { border-color: #d1d5db !important; }
+
+body.theme-korpo .font-glitch {
+    font-family: 'Arial', sans-serif !important;
+    font-weight: bold;
+    color: #2563eb !important;
+    text-shadow: none !important;
+    letter-spacing: -1px;
+}
+
+body.theme-korpo aside,
+body.theme-korpo .bg-black\/60,
+body.theme-korpo .bg-card {
+    background-color: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+}
+
+body.theme-korpo button.bg-neon-green {
+    background-color: #10b981 !important;
+    color: white !important;
+    border-radius: 4px !important;
+    box-shadow: none !important;
+}
+
+body.theme-korpo .fixed div[class*="absolute"] { display: none !important; }
+
+/* Override monospace font */
+body.theme-korpo .font-mono,
+body.theme-korpo select,
+body.theme-korpo input {
+    font-family: 'Arial', sans-serif !important;
+}
+
+/* =========================================
+   THEME: COQUETTE (Sad Girl)
+   ========================================= */
+body.theme-coquette {
+    background-color: #fff0f5 !important;
+    color: #8b4513 !important;
+    font-family: 'Playfair Display', serif !important;
+}
+
+body.theme-coquette .crt::before {
+    background: url('https://www.transparenttextures.com/patterns/lace.png');
+    opacity: 0.1;
+}
+
+body.theme-coquette .font-glitch {
+    font-family: 'Dancing Script', cursive !important;
+    color: #ffb7c5 !important;
+    text-shadow: 1px 1px 0px #fff;
+    font-size: 3.5rem !important;
+}
+
+body.theme-coquette .text-white { color: #5a3e36 !important; }
+body.theme-coquette aside,
+body.theme-coquette .bg-black\/60 {
+    background: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid #ffc0cb !important;
+    backdrop-filter: blur(4px);
+}
+
+body.theme-coquette button.bg-neon-green {
+    background-color: #ffb7c5 !important;
+    color: #8b0000 !important;
+    border-radius: 9999px !important;
+    border: 2px solid white;
+}
+
+body.theme-coquette .animate-pulse::after { content: ""; font-size: 0.5em; vertical-align: middle; }
+
+/* Override monospace font */
+body.theme-coquette .font-mono,
+body.theme-coquette select,
+body.theme-coquette input {
+    font-family: 'Playfair Display', serif !important;
+}
+
+/* =========================================
+   THEME: WINDOWS XP (Luna Blue)
+   ========================================= */
+body.theme-xp {
+    background-color: #3a6ea5 !important;
+    background-image: url('https://i.imgur.com/Hl4Nppq.jpg') !important;
+    background-size: cover;
+    background-position: center bottom;
+    background-attachment: fixed;
+    font-family: 'Tahoma', 'Verdana', sans-serif !important;
+    color: black !important;
+    font-size: 11px !important;
+}
+
+body.theme-xp .crt::before { display: none !important; }
+
+body.theme-xp .fixed.inset-0.z-0 { display: none !important; }
+
+/* Main window container */
+body.theme-xp main {
+    background-color: #ECE9D8 !important;
+    border: 3px solid #0055E5 !important;
+    border-top-left-radius: 8px !important;
+    border-top-right-radius: 8px !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    box-shadow: 2px 2px 10px rgba(0,0,0,0.5) !important;
+    margin: 15px !important;
+    height: calc(100% - 30px) !important;
+}
+
+/* Sidebar */
+body.theme-xp aside {
+    background: linear-gradient(to bottom, #ECE9D8 0%, #d4d0c8 100%) !important;
+    border-right: 1px solid #aca899 !important;
+}
+
+/* Title bar effect on logo */
+body.theme-xp .font-glitch {
+    font-family: 'Trebuchet MS', sans-serif !important;
+    font-weight: bold !important;
+    font-style: italic !important;
+    color: white !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5) !important;
+    background: linear-gradient(to bottom, #0058E6 0%, #3A93F2 45%, #0058E6 100%) !important;
+    -webkit-background-clip: unset !important;
+    -webkit-text-fill-color: white !important;
+    margin: -1rem -1rem 0.5rem -1rem !important;
+    padding: 8px 12px !important;
+    border-radius: 5px 5px 0 0 !important;
+    font-size: 1.2rem !important;
+    display: block !important;
+    width: calc(100% + 2rem) !important;
+    filter: none !important;
+    letter-spacing: 0 !important;
+}
+
+body.theme-xp .text-white,
+body.theme-xp .text-gray-300,
+body.theme-xp .text-gray-400,
+body.theme-xp .text-gray-500,
+body.theme-xp p,
+body.theme-xp label,
+body.theme-xp span {
+    color: black !important;
+    text-shadow: none !important;
+}
+
+body.theme-xp .text-neon-green { color: #008000 !important; }
+body.theme-xp .text-neon-cyan { color: #0055E5 !important; }
+body.theme-xp .text-neon-pink { color: #800080 !important; }
+
+/* Buttons */
+body.theme-xp button {
+    background: linear-gradient(to bottom, #ffffff 0%, #ECE9D8 50%, #d4d0c8 100%) !important;
+    border: 1px solid #003c74 !important;
+    border-radius: 3px !important;
+    color: black !important;
+    font-family: 'Tahoma', sans-serif !important;
+    box-shadow: inset 1px 1px 0 white, 1px 1px 0 #404040 !important;
+    text-shadow: none !important;
+}
+
+body.theme-xp button:hover {
+    background: linear-gradient(to bottom, #ffffff 0%, #f0ebe3 50%, #e4dfd7 100%) !important;
+}
+
+body.theme-xp button:active {
+    box-shadow: inset 1px 1px 2px #404040 !important;
+}
+
+/* Main action button (green Start-like) */
+body.theme-xp button.bg-neon-green {
+    background: linear-gradient(to bottom, #4DBD09 0%, #3E9E07 50%, #286805 100%) !important;
+    border: 2px solid white !important;
+    outline: 1px solid #286805 !important;
+    border-radius: 4px !important;
+    color: white !important;
+    font-weight: bold !important;
+    font-style: italic !important;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.5) !important;
+    box-shadow: inset 1px 1px 0 #7ed321 !important;
+}
+
+body.theme-xp button.bg-neon-green:hover {
+    background: linear-gradient(to bottom, #5fd00b 0%, #4DBD09 50%, #3E9E07 100%) !important;
+}
+
+/* Override monospace font */
+body.theme-xp .font-mono {
+    font-family: 'Tahoma', sans-serif !important;
+}
+
+/* Inputs and selects */
+body.theme-xp input[type="text"],
+body.theme-xp select {
+    background-color: white !important;
+    border: 1px solid #7F9DB9 !important;
+    color: black !important;
+    border-radius: 0 !important;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.15) !important;
+    font-family: 'Tahoma', sans-serif !important;
+}
+
+body.theme-xp input::placeholder { color: #808080 !important; }
+
+/* Range sliders */
+body.theme-xp input[type="range"] {
+    accent-color: #0055E5 !important;
+}
+
+/* Toggle switches become checkboxes */
+body.theme-xp button.rounded-full {
+    border-radius: 2px !important;
+    background: white !important;
+    border: 1px solid #7F9DB9 !important;
+    width: 13px !important;
+    height: 13px !important;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1) !important;
+    padding: 0 !important;
+}
+
+body.theme-xp button.rounded-full.bg-neon-pink,
+body.theme-xp button.rounded-full.bg-neon-green {
+    background: white !important;
+}
+
+body.theme-xp button.rounded-full.bg-neon-pink::after,
+body.theme-xp button.rounded-full.bg-neon-green::after {
+    content: "\2714";
+    color: #008000;
+    font-size: 10px;
+    position: absolute;
+    top: -2px;
+    left: 1px;
+}
+
+body.theme-xp button.rounded-full div { display: none !important; }
+
+/* Right panel */
+body.theme-xp .bg-black\/40 {
+    background-color: white !important;
+}
+
+/* Marquee bar */
+body.theme-xp .bg-neon-pink {
+    background-color: #FFFFE1 !important;
+    color: black !important;
+    border-bottom: 1px solid #aca899 !important;
+    font-family: 'Tahoma', sans-serif !important;
+    font-weight: normal !important;
+}
+
+/* Drop zone */
+body.theme-xp .border-dashed {
+    border: 2px dashed #aca899 !important;
+    background-color: #f5f5f5 !important;
+}
+
+body.theme-xp .border-dashed:hover {
+    background-color: #e8f4ff !important;
+    border-color: #0055E5 !important;
+}
+
+/* Logs terminal */
+body.theme-xp #logs-container {
+    background-color: black !important;
+    color: #c0c0c0 !important;
+    font-family: 'Lucida Console', 'Courier New', monospace !important;
+    border: 2px inset #808080 !important;
+    border-radius: 0 !important;
+}
+
+body.theme-xp #logs-container .text-neon-green { color: #00ff00 !important; }
+body.theme-xp #logs-container .text-neon-cyan { color: #00ffff !important; }
+body.theme-xp #logs-container .text-neon-pink { color: #ff00ff !important; }
+body.theme-xp #logs-container .text-error { color: #ff0000 !important; }
+
+/* Status bar */
+body.theme-xp .border-t.border-white\/10 {
+    background-color: #ECE9D8 !important;
+    border-top: 1px solid #aca899 !important;
+    color: black !important;
+}
+
+/* Scrollbar */
+body.theme-xp ::-webkit-scrollbar {
+    width: 16px;
+    background-color: #ECE9D8;
+}
+
+body.theme-xp ::-webkit-scrollbar-thumb {
+    background: linear-gradient(to right, #bdd6f6 0%, #9ebfe8 50%, #bdd6f6 100%);
+    border: 1px solid #89a4c7;
+    border-radius: 0;
+}
+
+body.theme-xp ::-webkit-scrollbar-track {
+    background: linear-gradient(to right, #f1f1f1 0%, #e1e1e1 100%);
+    border-left: 1px solid #d4d0c8;
+}
+
+body.theme-xp ::-webkit-scrollbar-button {
+    background-color: #ECE9D8;
+    border: 1px solid #aca899;
+    height: 16px;
+}
+
+/* =========================================
+   FIXES FOR WINDOWS XP THEME
+   ========================================= */
+
+/* Terminal logs fix - force light colors on black bg */
+body.theme-xp #logs-container div,
+body.theme-xp #logs-container span {
+    color: #c0c0c0 !important;
+    font-family: 'Courier New', monospace !important;
+    text-shadow: none !important;
+}
+
+body.theme-xp #logs-container .text-neon-green {
+    color: #00ff00 !important;
+}
+body.theme-xp #logs-container .text-error,
+body.theme-xp #logs-container .text-red-500 {
+    color: #ff3333 !important;
+}
+body.theme-xp #logs-container .text-yellow-400 {
+    color: #ffff00 !important;
+}
+body.theme-xp #logs-container .text-gray-400 {
+    color: #cccccc !important;
+}
+
+/* Output folder fix */
+body.theme-xp .bg-card {
+    background-color: white !important;
+    border: 2px solid #7F9DB9 !important;
+    border-radius: 0 !important;
+    box-shadow: inset 1px 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+body.theme-xp .bg-card input {
+    color: black !important;
+    font-family: 'Tahoma', sans-serif !important;
+}
+
+body.theme-xp .bg-card span {
+    color: #444 !important;
+}
+
+body.theme-xp .bg-card input::placeholder {
+    color: #999 !important;
+    font-style: italic;
+}
+
+/* Browse button fix */
+body.theme-xp button.bg-white\/10 {
+    background: linear-gradient(to bottom, #f9f9f9 0%, #e3e3e3 100%) !important;
+    border: 1px solid #003c74 !important;
+    color: black !important;
+    border-radius: 3px !important;
+}
+
+/* =========================================
+   THEME: ANIME KAWAII (UwU / Maid)
+   ========================================= */
+
+body.theme-anime {
+    background-color: #fff0f5;
+    background-image:
+        linear-gradient(45deg, #ffdeeb 25%, transparent 25%, transparent 75%, #ffdeeb 75%, #ffdeeb),
+        linear-gradient(45deg, #ffdeeb 25%, transparent 25%, transparent 75%, #ffdeeb 75%, #ffdeeb);
+    background-position: 0 0, 20px 20px;
+    background-size: 40px 40px;
+    font-family: 'Mali', 'Comic Sans MS', cursive !important;
+    color: #ff69b4;
+    cursor: url('https://cur.cursors-4u.net/anime/ani-12/ani1146.gif'), auto !important;
+}
+
+body.theme-anime button,
+body.theme-anime a,
+body.theme-anime select,
+body.theme-anime input {
+    cursor: url('https://cur.cursors-4u.net/anime/ani-12/ani1146.gif'), pointer !important;
+}
+
+body.theme-anime .crt::before { display: none !important; }
+body.theme-anime .fixed.inset-0.z-0 { display: none !important; }
+
+/* Typography */
+body.theme-anime .font-glitch {
+    font-family: 'Mali', cursive !important;
+    font-weight: 900 !important;
+    font-style: italic !important;
+    text-transform: none !important;
+    background: white;
+    -webkit-text-stroke: 4px #ff69b4;
+    paint-order: stroke fill;
+    -webkit-text-fill-color: white;
+    text-shadow: 3px 3px 0px #ffb6c1;
+    font-size: 3rem !important;
+    letter-spacing: -2px;
+    animation: uwuBounce 2s infinite ease-in-out;
+}
+
+@keyframes uwuBounce {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg) scale(1.05); }
+}
+
+/* Override monospace font */
+body.theme-anime .font-mono,
+body.theme-anime select,
+body.theme-anime input {
+    font-family: 'Mali', cursive !important;
+}
+
+/* Panels - Maid Apron Style */
+body.theme-anime aside,
+body.theme-anime .bg-black\/60,
+body.theme-anime .bg-card,
+body.theme-anime .glass-panel {
+    background: #fffafa !important;
+    border: 4px dashed #ffb7c5 !important;
+    border-radius: 30px !important;
+    box-shadow:
+        0 0 0 8px #fff,
+        0 0 0 10px #ffb7c5,
+        5px 15px 15px rgba(255, 105, 180, 0.2) !important;
+    margin: 10px !important;
+}
+
+/* Main Button - Strawberry Jelly */
+body.theme-anime button.bg-neon-green {
+    background: linear-gradient(180deg, #ff99cc 0%, #ff66b2 50%, #ff3399 100%) !important;
+    border: 3px solid white !important;
+    border-radius: 999px !important;
+    color: white !important;
+    font-weight: 900 !important;
+    font-size: 1.2rem !important;
+    text-shadow: 2px 2px 0 #ff1493;
+    box-shadow:
+        inset 0 5px 10px rgba(255,255,255,0.6),
+        0 5px 0 #ff1493,
+        0 10px 10px rgba(255,20,147,0.3) !important;
+    transform: translateY(0);
+    transition: all 0.1s;
+}
+body.theme-anime button.bg-neon-green:active {
+    transform: translateY(5px);
+    box-shadow:
+        inset 0 5px 20px rgba(0,0,0,0.1),
+        0 0 0 #ff1493 !important;
+}
+
+/* Secondary Buttons - Milky */
+body.theme-anime button:not(.bg-neon-green):not(.w-12):not(.rounded-full) {
+    background: #fff !important;
+    color: #ff69b4 !important;
+    border: 2px solid #ffb7c5 !important;
+    border-radius: 20px !important;
+    font-weight: bold;
+    font-family: 'Mali', cursive !important;
+}
+body.theme-anime button:hover:not(.bg-neon-green):not(.w-12):not(.rounded-full) {
+    background: #fff0f5 !important;
+    transform: rotate(-2deg);
+}
+
+/* Inputs - Cute & Round */
+body.theme-anime input[type="text"],
+body.theme-anime select {
+    background-color: white !important;
+    border: 2px solid #ff69b4 !important;
+    border-radius: 50px !important;
+    color: #ff1493 !important;
+    padding-left: 15px !important;
+    font-family: 'Mali', cursive !important;
+    box-shadow: inset 2px 2px 5px rgba(255,105,180,0.1) !important;
+}
+
+/* Text colors */
+body.theme-anime .text-white { color: #ff69b4 !important; }
+body.theme-anime .text-gray-300,
+body.theme-anime .text-gray-400,
+body.theme-anime .text-gray-500 { color: #db7093 !important; }
+body.theme-anime .text-neon-green { color: #ff00ff !important; font-weight: bold; }
+body.theme-anime .text-neon-cyan { color: #00bfff !important; font-weight: bold; }
+
+/* Toggle Switches */
+body.theme-anime button.rounded-full {
+    border-radius: 10px !important;
+    background: white !important;
+    border: 2px solid #ff69b4 !important;
+}
+body.theme-anime button.rounded-full.bg-neon-pink,
+body.theme-anime button.rounded-full.bg-neon-green {
+    background: #ff69b4 !important;
+}
+
+/* Marquee - Lace Ribbon */
+body.theme-anime .bg-neon-pink {
+    background: #ffb7c5 !important;
+    color: white !important;
+    border-top: 5px dotted white !important;
+    border-bottom: 5px dotted white !important;
+    font-size: 14px !important;
+    padding: 8px 0 !important;
+}
+
+/* Dropzone - Fluffy Cloud */
+body.theme-anime .border-dashed {
+    border: none !important;
+    background-color: #f0f8ff !important;
+    border-radius: 50% 20% / 10% 40% !important;
+    box-shadow:
+        inset 0 0 20px #fff,
+        0 0 0 5px #b0e0e6 !important;
+    animation: cloudFloat 3s ease-in-out infinite alternate;
+}
+@keyframes cloudFloat {
+    from { transform: translateY(0); }
+    to { transform: translateY(-5px); }
+}
+
+/* Logs - Kitty Diary */
+body.theme-anime #logs-container {
+    background-color: #fff !important;
+    background-image: repeating-linear-gradient(transparent, transparent 23px, #ffe4e1 24px) !important;
+    line-height: 24px !important;
+    border: 3px solid #ffb7c5 !important;
+    border-radius: 10px !important;
+    color: #888 !important;
+    font-family: 'Mali', cursive !important;
+}
+body.theme-anime #logs-container .text-neon-green { color: #ff69b4 !important; }
+body.theme-anime #logs-container .text-error { color: #ff4040 !important; }
+
+/* Status Bar */
+body.theme-anime .border-t.border-white\/10 {
+    background: #ffc0cb !important;
+    color: #fff !important;
+    font-weight: bold;
+    border-top: 4px solid white !important;
+}
+
+/* Slider */
+body.theme-anime input[type="range"] {
+    height: 10px !important;
+    border-radius: 5px !important;
+    background: #ffe4e1 !important;
+    accent-color: #ff69b4 !important;
+}
+
+/* Scrollbar */
+body.theme-anime ::-webkit-scrollbar {
+    width: 14px;
+}
+body.theme-anime ::-webkit-scrollbar-track {
+    background: #fff0f5;
+    border-left: 2px solid #ffb7c5;
+}
+body.theme-anime ::-webkit-scrollbar-thumb {
+    background-color: #ff69b4;
+    border-radius: 10px;
+    border: 3px solid #fff0f5;
+}
+
+/* =========================================
+   FIXES: REMOVE ALL BLACK COLORS (Anime Theme)
+   ========================================= */
+
+/* 1. Modal backdrop */
+body.theme-anime .fixed.inset-0.bg-black\/90 {
+    background-color: rgba(255, 240, 245, 0.85) !important;
+    backdrop-filter: blur(5px) !important;
+}
+
+/* 2. Modal container */
+body.theme-anime .bg-card {
+    background-color: #fffafa !important;
+    border: 4px dashed #ffb7c5 !important;
+    box-shadow: 0 0 0 5px white, 0 10px 25px rgba(255, 105, 180, 0.3) !important;
+}
+
+/* 3. Image preview background (black box replacement) */
+body.theme-anime .bg-black {
+    background-color: #fff0f5 !important;
+    background-image:
+        linear-gradient(45deg, #ffe4e1 25%, transparent 25%),
+        linear-gradient(-45deg, #ffe4e1 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ffe4e1 75%),
+        linear-gradient(-45deg, transparent 75%, #ffe4e1 75%) !important;
+    background-size: 20px 20px !important;
+    background-position: 0 0, 0 10px, 10px -10px, -10px 0px !important;
+    border: 2px solid #ffb7c5 !important;
+    border-radius: 15px !important;
+}
+
+/* 4. Modal header */
+body.theme-anime h2.text-neon-cyan {
+    color: #da70d6 !important;
+    text-shadow: 2px 2px 0px #ffe4e1 !important;
+    font-family: 'Mali', cursive !important;
+    font-weight: 900 !important;
+}
+
+/* 5. Close button (X) */
+body.theme-anime button.text-gray-500 {
+    color: #ff69b4 !important;
+    transition: transform 0.2s;
+}
+body.theme-anime button.text-gray-500:hover {
+    color: #ff1493 !important;
+    transform: rotate(90deg) scale(1.2);
+    background: transparent !important;
+}
+
+/* 6. Small labels and text */
+body.theme-anime .text-gray-500,
+body.theme-anime .text-gray-400,
+body.theme-anime .text-gray-600 {
+    color: #ba55d3 !important;
+    font-weight: bold !important;
+}
+
+/* 7. Input placeholders */
+body.theme-anime input::placeholder {
+    color: #ffb7c5 !important;
+    opacity: 0.7;
+}
+
+/* 8. Other black backgrounds */
+body.theme-anime .bg-black\/30,
+body.theme-anime .bg-black\/50 {
+    background-color: rgba(255, 255, 255, 0.5) !important;
+    border: 1px solid #ffb7c5 !important;
+    color: #ff1493 !important;
+}

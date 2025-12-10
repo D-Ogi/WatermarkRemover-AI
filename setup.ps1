@@ -1,48 +1,237 @@
-# PowerShell equivalent of setup.sh for Windows
-$ENV_NAME = "py312aiwatermark"
-$ENV_FILE = "environment.yml"
+# WatermarkRemover-AI Setup Script
+$Host.UI.RawUI.WindowTitle = "WatermarkRemover-AI Setup"
 
-# Check if conda is installed
-try {
-    conda --version > $null
-}
-catch {
-    Write-Host "Conda could not be found. Please install Conda or Miniconda and try again."
-    exit 1
-}
+$PYTHON_VERSION = "3.12.7"
+$PYTHON_DIR = "python"
+$PYTHON_EXE = "$PYTHON_DIR\python.exe"
 
-# Check if the environment already exists
-$envExists = conda env list | Select-String "^$ENV_NAME\s"
+# Fun facts and tips to show during installation
+$tips = @(
+    @{icon="[i]"; color="Cyan"; text="Florence-2 can detect watermarks in any language - even emojis!"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Use 'Transparent mode' to keep the original background visible"},
+    @{icon="[i]"; color="Cyan"; text="The AI model was trained on millions of images to understand context"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Lower 'Max detection size' if the AI removes too much"},
+    @{icon="[i]"; color="Cyan"; text="LaMA stands for 'Large Mask inpainting' - it fills gaps naturally"},
+    @{icon="[?]"; color="Yellow"; text="Tip: GPU processing is 10-50x faster than CPU"},
+    @{icon="[i]"; color="Cyan"; text="This tool works on both images AND videos!"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Batch mode can process entire folders at once"},
+    @{icon="[i]"; color="Cyan"; text="The AI analyzes each frame independently for best results"},
+    @{icon="[?]"; color="Yellow"; text="Tip: PNG format preserves quality, JPG saves space"},
+    @{icon="[i]"; color="Cyan"; text="Florence-2 is Microsoft's latest vision AI model"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Install FFmpeg to keep audio in processed videos"},
+    @{icon="[i]"; color="Cyan"; text="The inpainting AI 'imagines' what should be behind the watermark"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Works best on watermarks that cover less than 10% of image"},
+    @{icon="[i]"; color="Cyan"; text="Processing 4K video? Get some snacks, it takes a while"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Check the logs if something goes wrong"},
+    @{icon="[i]"; color="Cyan"; text="The AI can handle semi-transparent watermarks too!"},
+    @{icon="[?]"; color="Yellow"; text="Tip: Your settings are saved automatically between sessions"}
+)
 
-if ($envExists) {
-    Write-Host "Environment '$ENV_NAME' already exists. Activating it..."
-    conda activate $ENV_NAME
-}
-else {
-    # Create the Conda environment
-    Write-Host "Creating Conda environment '$ENV_NAME' from '$ENV_FILE'..."
-    conda env create -f $ENV_FILE
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "Failed to create the Conda environment."
+Write-Host ""
+Write-Host "  =============================================" -ForegroundColor Cyan
+Write-Host "     WatermarkRemover-AI Setup                 " -ForegroundColor Cyan
+Write-Host "  =============================================" -ForegroundColor Cyan
+Write-Host ""
+
+# Check if embedded Python exists
+if (-not (Test-Path $PYTHON_EXE)) {
+    Write-Host "  [*] Downloading Python $PYTHON_VERSION..." -ForegroundColor Cyan
+
+    $arch = if ([Environment]::Is64BitOperatingSystem) { "amd64" } else { "win32" }
+    $pythonZip = "python-$PYTHON_VERSION-embed-$arch.zip"
+    $pythonUrl = "https://www.python.org/ftp/python/$PYTHON_VERSION/$pythonZip"
+
+    try {
+        # Download Python
+        Invoke-WebRequest -Uri $pythonUrl -OutFile $pythonZip -UseBasicParsing
+        Write-Host "  [OK] Downloaded Python" -ForegroundColor Green
+
+        # Extract
+        Write-Host "  [*] Extracting..." -ForegroundColor Cyan
+        Expand-Archive -Path $pythonZip -DestinationPath $PYTHON_DIR -Force
+        Remove-Item $pythonZip
+
+        # Enable pip by modifying python312._pth
+        $pthFile = Join-Path $PYTHON_DIR "python312._pth"
+        if (Test-Path $pthFile) {
+            $pthContent = Get-Content $pthFile -Raw
+            $pthContent = $pthContent -replace "#import site", "import site"
+            $pthContent = $pthContent + "`nLib\site-packages"
+            Set-Content -Path $pthFile -Value $pthContent -NoNewline
+        }
+
+        # Create Lib\site-packages directory
+        $sitePackages = Join-Path $PYTHON_DIR "Lib\site-packages"
+        New-Item -ItemType Directory -Path $sitePackages -Force | Out-Null
+
+        # Download and install pip
+        Write-Host "  [*] Installing pip..." -ForegroundColor Cyan
+        $getPipUrl = "https://bootstrap.pypa.io/get-pip.py"
+        Invoke-WebRequest -Uri $getPipUrl -OutFile "get-pip.py" -UseBasicParsing
+        & $PYTHON_EXE get-pip.py --no-warn-script-location 2>&1 | Out-Null
+        Remove-Item "get-pip.py"
+
+        Write-Host "  [OK] Python $PYTHON_VERSION ready" -ForegroundColor Green
+    }
+    catch {
+        Write-Host "  [X] Failed to download Python: $_" -ForegroundColor Red
+        Read-Host "  Press Enter to exit"
         exit 1
     }
-    conda activate $ENV_NAME
+}
+else {
+    Write-Host "  [OK] Python found" -ForegroundColor Green
 }
 
-# Ensure required dependencies are installed
-$packages = @("PyQt6", "transformers", "iopaint", "opencv-python-headless")
-foreach ($package in $packages) {
-    $installed = pip list | Select-String $package
-    if (-not $installed) {
-        Write-Host "Installing $package..."
-        pip install $package
+Write-Host ""
+Write-Host "  [*] Installing dependencies..." -ForegroundColor Cyan
+Write-Host "      This takes 5-10 minutes. Chill and learn something!" -ForegroundColor Magenta
+Write-Host ""
+Write-Host "      Did you know?" -ForegroundColor DarkGray
+Write-Host ""
+
+# Upgrade pip and ensure build tooling is available for sdists
+& $PYTHON_EXE -m pip install --upgrade pip setuptools wheel 2>&1 | Out-Null
+
+# Install base deps with tips (legacy resolver to ignore conflicts)
+$process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver" -NoNewWindow -PassThru
+
+$lastTipTime = Get-Date
+$currentTip = Get-Random -Maximum $tips.Count
+
+while (-not $process.HasExited) {
+    $now = Get-Date
+    if (($now - $lastTipTime).TotalSeconds -ge 5) {
+        $tip = $tips[$currentTip]
+        $line = "      $($tip.icon) $($tip.text)"
+        $line = $line.PadRight(90)
+        Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
+
+        $currentTip = ($currentTip + 1) % $tips.Count
+        $lastTipTime = $now
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+Write-Host "`r                                                                                              "
+
+# Legacy resolver can return non-zero even on success, so verify key packages
+$verifyResult = & $PYTHON_EXE -c "import torch; import transformers; import webview; import cv2; print('OK')" 2>&1
+if ($verifyResult -ne "OK") {
+    if ($process.ExitCode -ne 0) {
+        Write-Host ""
+        Write-Host "  [X] Failed to install dependencies" -ForegroundColor Red
+        Read-Host "  Press Enter to exit"
+        exit 1
     }
 }
 
-# Download the LaMA model
-Write-Host "Downloading the LaMA model..."
-iopaint download --model lama
+# Install iopaint separately without pulling its deps (we already have ours)
+Write-Host "  [*] Installing iopaint (no deps)..." -ForegroundColor Cyan
+$iopaintProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "iopaint", "--no-deps", "--no-cache-dir" -NoNewWindow -PassThru
+$iopaintProcess.WaitForExit()
 
-# Launch the GUI
-Write-Host "Launching the GUI application..."
-python remwmgui.py 
+if ($iopaintProcess.ExitCode -ne 0) {
+    Write-Host ""
+    Write-Host "  [X] Failed to install iopaint" -ForegroundColor Red
+    Read-Host "  Press Enter to exit"
+    exit 1
+}
+Write-Host "  [OK] iopaint installed" -ForegroundColor Green
+
+Write-Host "  [OK] Dependencies installed" -ForegroundColor Green
+
+# Download LaMA model
+Write-Host ""
+Write-Host "  [*] Downloading AI model (196MB)..." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "      Did you know?" -ForegroundColor DarkGray
+Write-Host ""
+
+$lamaProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "iopaint", "download", "--model", "lama" -NoNewWindow -PassThru
+
+$lastTipTime = Get-Date
+while (-not $lamaProcess.HasExited) {
+    $now = Get-Date
+    if (($now - $lastTipTime).TotalSeconds -ge 5) {
+        $tip = $tips[$currentTip]
+        $line = "      $($tip.icon) $($tip.text)"
+        $line = $line.PadRight(90)
+        Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
+
+        $currentTip = ($currentTip + 1) % $tips.Count
+        $lastTipTime = $now
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+Write-Host "`r                                                                                              "
+
+if ($lamaProcess.ExitCode -ne 0) {
+    Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
+    Write-Host "      You can retry later" -ForegroundColor Yellow
+}
+else {
+    Write-Host "  [OK] LaMA model ready" -ForegroundColor Green
+}
+
+# Download Florence-2 model for watermark detection
+Write-Host ""
+Write-Host "  [*] Downloading Florence-2 detection model (~1.5GB)..." -ForegroundColor Cyan
+Write-Host ""
+Write-Host "      Did you know?" -ForegroundColor DarkGray
+Write-Host ""
+
+$florenceScript = @"
+from huggingface_hub import snapshot_download
+snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)
+print('FLORENCE_OK')
+"@
+
+$florenceProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-c", "`"$florenceScript`"" -NoNewWindow -PassThru
+
+$lastTipTime = Get-Date
+while (-not $florenceProcess.HasExited) {
+    $now = Get-Date
+    if (($now - $lastTipTime).TotalSeconds -ge 5) {
+        $tip = $tips[$currentTip]
+        $line = "      $($tip.icon) $($tip.text)"
+        $line = $line.PadRight(90)
+        Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
+
+        $currentTip = ($currentTip + 1) % $tips.Count
+        $lastTipTime = $now
+    }
+    Start-Sleep -Milliseconds 300
+}
+
+Write-Host "`r                                                                                              "
+
+if ($florenceProcess.ExitCode -ne 0) {
+    Write-Host "  [!] Warning: Could not download Florence-2 model" -ForegroundColor Yellow
+    Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
+}
+else {
+    Write-Host "  [OK] Florence-2 model ready" -ForegroundColor Green
+}
+
+Write-Host ""
+Write-Host "  =============================================" -ForegroundColor Green
+Write-Host "     Setup complete! Ready to go!              " -ForegroundColor Green
+Write-Host "  =============================================" -ForegroundColor Green
+Write-Host ""
+Write-Host "  To run the app: Double-click " -ForegroundColor Cyan -NoNewline
+Write-Host "run.bat" -ForegroundColor White
+Write-Host ""
+
+$launch = Read-Host "  Launch now? (y/n)"
+if ($launch -eq "y" -or $launch -eq "Y") {
+    Write-Host ""
+    Write-Host "  Starting WatermarkRemover-AI..." -ForegroundColor Green
+    Start-Process -FilePath $PYTHON_EXE -ArgumentList "remwmgui.py" -NoNewWindow
+}
+
+Write-Host ""
+Write-Host "  Have fun yeeting watermarks!" -ForegroundColor Magenta
+Write-Host ""
+Read-Host "  Press Enter to exit"

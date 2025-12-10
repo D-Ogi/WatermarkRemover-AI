@@ -1,473 +1,476 @@
-import os
-import sys
-import subprocess
-import psutil
-import yaml
-import torch
-import time
+"""
+WatermarkRemover-AI GUI - Ohio Edition
+PyWebview frontend with brainrot HTML UI
+"""
+
+import logging
+
+# Suppress noisy pywebview WebView2 COM warnings (thread safety noise, doesn't affect functionality)
+class PyWebviewFilter(logging.Filter):
+    def filter(self, record):
+        msg = record.getMessage()
+        # Filter out WebView2 COM interface errors that spam the console
+        if 'Error while processing window.native' in msg:
+            return False
+        if 'CoreWebView2 members can only be accessed' in msg:
+            return False
+        return True
+
+logging.getLogger('pywebview').addFilter(PyWebviewFilter())
+
+import webview
 import threading
-import shutil
+import subprocess
+import sys
+import os
+import json
+import yaml
+import base64
 from pathlib import Path
-from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QFileDialog, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit,
-    QProgressBar, QComboBox, QMessageBox, QRadioButton, QButtonGroup, QSlider, QCheckBox, QStatusBar
-)
-from PyQt6.QtCore import Qt, pyqtSignal, QObject, QThread, QTimer
-from PyQt6.QtGui import QPalette, QColor
-from loguru import logger
+
+# Only psutil for system info (lightweight)
+try:
+    import psutil
+    PSUTIL_AVAILABLE = True
+except ImportError:
+    PSUTIL_AVAILABLE = False
+
 
 CONFIG_FILE = "ui.yml"
 
-class Worker(QObject):
-    log_signal = pyqtSignal(str)
-    progress_signal = pyqtSignal(int)
-    finished_signal = pyqtSignal()
-    error_signal = pyqtSignal(str)
 
-    def __init__(self, process):
-        super().__init__()
-        self.process = process
-        self.running = True
+class Api:
+    """Python API exposed to JavaScript frontend"""
 
-    def run(self):
-        try:
-            # Créer un thread pour lire stderr
-            error_thread = threading.Thread(target=self.read_stderr)
-            error_thread.daemon = True
-            error_thread.start()
-            
-            # Lire stdout avec un timeout pour éviter les blocages
-            while self.running and self.process.poll() is None:
-                line = self.process.stdout.readline()
-                if line:
-                    self.log_signal.emit(line)
-                    if "overall_progress:" in line:
-                        try:
-                            progress = int(line.strip().split("overall_progress:")[1].strip())
-                            self.progress_signal.emit(progress)
-                        except (ValueError, IndexError) as e:
-                            self.log_signal.emit(f"Erreur de parsing de la progression: {str(e)}")
-                else:
-                    # Petite pause pour éviter d'utiliser trop de CPU
-                    time.sleep(0.1)
-            
-            # Vérifier si le processus s'est terminé normalement
-            if self.process.returncode is not None and self.process.returncode != 0:
-                self.error_signal.emit(f"Le processus s'est terminé avec le code d'erreur: {self.process.returncode}")
-                
-        except Exception as e:
-            self.error_signal.emit(f"Erreur dans le worker: {str(e)}")
-        finally:
-            # S'assurer que les flux sont fermés
+    def __init__(self):
+        self.window = None
+        self.process = None
+        self.is_running = False
+        self.config = self._load_config()
+
+    def set_window(self, window):
+        """Set the webview window reference"""
+        self.window = window
+
+    def _load_config(self):
+        """Load saved configuration from YAML file"""
+        if os.path.exists(CONFIG_FILE):
             try:
-                self.process.stdout.close()
-                self.process.stderr.close()
-            except:
+                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                    return yaml.safe_load(f) or {}
+            except Exception:
                 pass
-            self.finished_signal.emit()
-    
-    def read_stderr(self):
-        """Lire stderr dans un thread séparé pour éviter les blocages"""
+        return {}
+
+    def _save_config(self, config):
+        """Save configuration to YAML file"""
         try:
-            for line in iter(self.process.stderr.readline, ""):
-                if line:
-                    self.log_signal.emit(f"ERREUR: {line}")
-        except:
+            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+                yaml.dump(config, f, default_flow_style=False)
+        except Exception as e:
+            print(f"Failed to save config: {e}")
+
+    def get_config(self):
+        """Return saved configuration to frontend"""
+        return self.config
+
+    def save_config(self, config):
+        """Save configuration from frontend"""
+        self.config = config
+        self._save_config(config)
+
+    def browse_file(self):
+        """Open file browser dialog"""
+        if not self.window:
+            return None
+
+        file_types = (
+            'All supported files (*.png;*.jpg;*.jpeg;*.webp;*.bmp;*.mp4;*.avi;*.mov;*.mkv;*.flv;*.wmv;*.webm)',
+            'Images (*.png;*.jpg;*.jpeg;*.webp;*.bmp)',
+            'Videos (*.mp4;*.avi;*.mov;*.mkv;*.flv;*.wmv;*.webm)',
+            'All files (*.*)'
+        )
+
+        result = self.window.create_file_dialog(
+            webview.OPEN_DIALOG,
+            file_types=file_types
+        )
+        return result[0] if result else None
+
+    def browse_folder(self):
+        """Open folder browser dialog"""
+        if not self.window:
+            return None
+
+        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        return result[0] if result else None
+
+    def _would_overwrite_input(self, input_path, output_path):
+        """Check if output would overwrite the input file."""
+        supported_ext = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
+
+        if os.path.isfile(input_path):
+            # Single file mode
+            output_ext = os.path.splitext(output_path)[1].lower()
+            is_output_dir = os.path.isdir(output_path) or (output_ext == '' or output_ext not in supported_ext)
+
+            if is_output_dir:
+                output_file = os.path.join(output_path, os.path.basename(input_path))
+            else:
+                output_file = output_path
+            # Compare resolved paths
+            return os.path.normcase(os.path.abspath(input_path)) == os.path.normcase(os.path.abspath(output_file))
+        else:
+            # Directory mode - check if input and output folders are the same
+            return os.path.normcase(os.path.abspath(input_path)) == os.path.normcase(os.path.abspath(output_path))
+
+    def _check_file_conflicts(self, input_path, output_path):
+        """Check if output files already exist. Returns list of conflicting filenames."""
+        conflicts = []
+        supported_ext = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
+
+        if os.path.isfile(input_path):
+            # Single file mode
+            input_name = os.path.basename(input_path)
+            # Check if output_path is an existing directory OR looks like a directory path (no file extension)
+            output_ext = os.path.splitext(output_path)[1].lower()
+            is_output_dir = os.path.isdir(output_path) or (output_ext == '' or output_ext not in supported_ext)
+
+            if is_output_dir:
+                output_file = os.path.join(output_path, input_name)
+            else:
+                output_file = output_path
+
+            # Check for file with same name OR alternate extension (jpg<->jpeg)
+            files_to_check = [output_file]
+            base, ext = os.path.splitext(output_file)
+            if ext.lower() == '.jpg':
+                files_to_check.append(base + '.jpeg')
+            elif ext.lower() == '.jpeg':
+                files_to_check.append(base + '.jpg')
+
+            for check_file in files_to_check:
+                if os.path.exists(check_file):
+                    conflicts.append(os.path.basename(check_file))
+                    break
+        else:
+            # Directory/batch mode
+            if os.path.isdir(input_path):
+                for fname in os.listdir(input_path):
+                    ext = os.path.splitext(fname)[1].lower()
+                    if ext in supported_ext:
+                        output_file = os.path.join(output_path, fname)
+                        if os.path.exists(output_file):
+                            conflicts.append(fname)
+
+        return conflicts
+
+    def get_static_info(self):
+        """Get static system info (CUDA, FFmpeg, GPU) - call once on startup"""
+        info = {
+            'cuda': False,
+            'gpu_name': None,
+            'ffmpeg': False
+        }
+
+        # Windows: hide console windows for subprocesses
+        creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
+
+        # Check CUDA via subprocess (avoid importing torch in GUI)
+        try:
+            result = subprocess.run(
+                [sys.executable, '-c', 'import torch; print("CUDA:" + str(torch.cuda.is_available()) + ":" + (torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""))'],
+                capture_output=True, text=True, timeout=10, creationflags=creationflags
+            )
+            if result.returncode == 0 and 'CUDA:' in result.stdout:
+                parts = result.stdout.strip().split(':')
+                info['cuda'] = parts[1] == 'True'
+                if len(parts) > 2 and parts[2]:
+                    info['gpu_name'] = parts[2]
+        except Exception:
             pass
 
-    def stop(self):
-        self.running = False
+        # Check FFmpeg
+        try:
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True, creationflags=creationflags)
+            info['ffmpeg'] = True
+        except (subprocess.SubprocessError, FileNotFoundError):
+            info['ffmpeg'] = False
 
-class WatermarkRemoverGUI(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("Watermark Remover GUI")
-        self.setGeometry(100, 100, 800, 600)
+        return info
 
-        # Initialize UI elements
-        self.radio_single = QRadioButton("Process Single File")
-        self.radio_batch = QRadioButton("Process Directory")
-        self.radio_single.setChecked(True)
-        self.mode_group = QButtonGroup()
-        self.mode_group.addButton(self.radio_single)
-        self.mode_group.addButton(self.radio_batch)
+    def get_dynamic_info(self):
+        """Get dynamic system info (RAM, CPU) - call periodically"""
+        info = {
+            'ram_percent': 0,
+            'cpu_percent': 0
+        }
 
-        self.input_path = QLineEdit(self)
-        self.output_path = QLineEdit(self)
-        self.overwrite_checkbox = QCheckBox("Overwrite Existing Files", self)
-        self.transparent_checkbox = QCheckBox("Make Watermark Transparent", self)
-        self.max_bbox_percent_slider = QSlider(Qt.Orientation.Horizontal, self)
-        self.max_bbox_percent_slider.setRange(1, 100)
-        self.max_bbox_percent_slider.setValue(10)
-        self.max_bbox_percent_label = QLabel(f"Max BBox Percent: 10%", self)
-        self.max_bbox_percent_slider.valueChanged.connect(self.update_bbox_label)
+        if PSUTIL_AVAILABLE:
+            try:
+                info['ram_percent'] = psutil.virtual_memory().percent
+                info['cpu_percent'] = psutil.cpu_percent()
+            except Exception:
+                pass
 
-        self.force_format_png = QRadioButton("PNG")
-        self.force_format_webp = QRadioButton("WEBP")
-        self.force_format_jpg = QRadioButton("JPG")
-        self.force_format_mp4 = QRadioButton("MP4")
-        self.force_format_avi = QRadioButton("AVI")
-        self.force_format_none = QRadioButton("None")
-        self.force_format_none.setChecked(True)
-        self.force_format_group = QButtonGroup()
-        self.force_format_group.addButton(self.force_format_png)
-        self.force_format_group.addButton(self.force_format_webp)
-        self.force_format_group.addButton(self.force_format_jpg)
-        self.force_format_group.addButton(self.force_format_mp4)
-        self.force_format_group.addButton(self.force_format_avi)
-        self.force_format_group.addButton(self.force_format_none)
+        return info
 
-        self.progress_bar = QProgressBar(self)
-        self.logs = QTextEdit(self)
-        self.logs.setReadOnly(True)
-        self.logs.setVisible(False)
+    def start_processing(self, settings):
+        """Start watermark removal processing"""
+        if self.is_running:
+            return {'error': 'Already running'}
 
-        self.start_button = QPushButton("Start", self)
-        self.stop_button = QPushButton("Stop", self)
-        self.toggle_logs_button = QPushButton("Show Logs", self)
-        self.toggle_logs_button.setCheckable(True)
-        self.stop_button.setDisabled(True)
+        input_path = settings.get('input', '')
+        output_path = settings.get('output', '')
 
-        # Status bar for system info
-        self.status_bar = QStatusBar()
-        self.setStatusBar(self.status_bar)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_system_info)
-        self.timer.start(1000)  # Update every second
+        if not input_path:
+            return {'error': 'No input path specified'}
 
-        self.process = None
-        self.thread = None
-        self.worker = None
+        # Use input directory as output if not specified
+        if not output_path:
+            if os.path.isfile(input_path):
+                output_path = os.path.dirname(input_path)
+            else:
+                output_path = input_path
 
-        # Layout
-        layout = QVBoxLayout()
+        # SAFETY: Check if output would overwrite input
+        overwrite = settings.get('overwrite', False)
+        would_overwrite_input = self._would_overwrite_input(input_path, output_path)
+        if would_overwrite_input:
+            return {'error': 'Cannot overwrite input file! Choose a different output folder.'}
 
-        # Mode selection
-        mode_layout = QHBoxLayout()
-        mode_layout.addWidget(self.radio_single)
-        mode_layout.addWidget(self.radio_batch)
+        # Check for file conflicts if overwrite is not enabled
+        if not overwrite:
+            conflicts = self._check_file_conflicts(input_path, output_path)
+            if conflicts:
+                conflict_list = ', '.join(conflicts[:3])
+                more = f" (+{len(conflicts)-3} more)" if len(conflicts) > 3 else ""
+                error_msg = f'Output files already exist: {conflict_list}{more}. Enable "Overwrite" or choose different output folder.'
+                return {'error': error_msg}
 
-        # Input and output paths
-        path_layout = QVBoxLayout()
-        path_layout.addWidget(QLabel("Input Path:"))
-        path_layout.addWidget(self.input_path)
-        path_layout.addWidget(QPushButton("Browse", clicked=self.browse_input))
-        path_layout.addWidget(QLabel("Output Path:"))
-        path_layout.addWidget(self.output_path)
-        path_layout.addWidget(QPushButton("Browse", clicked=self.browse_output))
+        # Get settings
+        detection_prompt = settings.get('detection_prompt', 'watermark')
+        detection_skip = settings.get('detection_skip', 1)
+        fade_in = settings.get('fade_in', 0)
+        fade_out = settings.get('fade_out', 0)
 
-        # Options
-        options_layout = QVBoxLayout()
-        options_layout.addWidget(self.overwrite_checkbox)
-        options_layout.addWidget(self.transparent_checkbox)
+        # Save config
+        self.save_config({
+            'input_path': input_path,
+            'output_path': output_path,
+            'overwrite': settings.get('overwrite', False),
+            'transparent': settings.get('transparent', False),
+            'max_bbox_percent': settings.get('max_bbox', 15),
+            'force_format': settings.get('format', 'None'),
+            'mode': settings.get('mode', 'single'),
+            'detection_prompt': detection_prompt,
+            'detection_skip': detection_skip,
+            'fade_in': fade_in,
+            'fade_out': fade_out
+        })
 
-        bbox_layout = QVBoxLayout()
-        bbox_layout.addWidget(self.max_bbox_percent_label)
-        bbox_layout.addWidget(self.max_bbox_percent_slider)
-        options_layout.addLayout(bbox_layout)
+        # Build command
+        cmd = [sys.executable, 'remwm.py', input_path, output_path]
 
-        force_format_layout = QHBoxLayout()
-        force_format_layout.addWidget(QLabel("Force Format:"))
-        force_format_layout.addWidget(self.force_format_png)
-        force_format_layout.addWidget(self.force_format_webp)
-        force_format_layout.addWidget(self.force_format_jpg)
-        force_format_layout.addWidget(self.force_format_mp4)
-        force_format_layout.addWidget(self.force_format_avi)
-        force_format_layout.addWidget(self.force_format_none)
-        options_layout.addLayout(force_format_layout)
+        if settings.get('overwrite'):
+            cmd.append('--overwrite')
 
-        # Logs and progress
-        progress_layout = QVBoxLayout()
-        progress_layout.addWidget(QLabel("Progress:"))
-        progress_layout.addWidget(self.progress_bar)
-        progress_layout.addWidget(self.toggle_logs_button)
-        progress_layout.addWidget(self.logs)
+        if settings.get('transparent'):
+            cmd.append('--transparent')
 
-        # Buttons
-        button_layout = QHBoxLayout()
-        button_layout.addWidget(self.start_button)
-        button_layout.addWidget(self.stop_button)
+        max_bbox = settings.get('max_bbox', 15)
+        cmd.append(f'--max-bbox-percent={int(max_bbox)}')
 
-        # Final assembly
-        layout.addLayout(mode_layout)
-        layout.addLayout(path_layout)
-        layout.addLayout(options_layout)
-        layout.addLayout(progress_layout)
-        layout.addLayout(button_layout)
+        format_opt = settings.get('format', 'None')
+        if format_opt and format_opt != 'None':
+            cmd.append(f'--force-format={format_opt}')
 
-        container = QWidget()
-        container.setLayout(layout)
-        self.setCentralWidget(container)
+        if detection_prompt and detection_prompt != 'watermark':
+            cmd.append(f'--detection-prompt={detection_prompt}')
 
-        # Connect buttons
-        self.start_button.clicked.connect(self.start_processing)
-        self.stop_button.clicked.connect(self.stop_processing)
-        self.toggle_logs_button.toggled.connect(self.toggle_logs)
+        if detection_skip and int(detection_skip) > 1:
+            cmd.append(f'--detection-skip={int(detection_skip)}')
 
-        self.apply_dark_mode_if_needed()
+        if fade_in and float(fade_in) > 0:
+            cmd.append(f'--fade-in={float(fade_in)}')
 
-        # Load configuration
-        self.load_config()
+        if fade_out and float(fade_out) > 0:
+            cmd.append(f'--fade-out={float(fade_out)}')
 
-    def update_bbox_label(self, value):
-        self.max_bbox_percent_label.setText(f"Max BBox Percent: {value}%")
+        # Start processing in background thread
+        self.is_running = True
+        threading.Thread(target=self._run_process, args=(cmd,), daemon=True).start()
+        return {'status': 'started'}
 
-    def toggle_logs(self, checked):
-        self.logs.setVisible(checked)
-        self.toggle_logs_button.setText("Hide Logs" if checked else "Show Logs")
+    def _run_process(self, cmd):
+        """Run the subprocess and stream output to frontend"""
+        try:
+            # Log the CLI command for educational purposes
+            cli_display = ' '.join(cmd[1:])  # Skip python executable
+            cli_display = cli_display.replace('remwm.py ', 'python remwm.py \\\n    ')
+            cli_display = cli_display.replace(' --', ' \\\n    --')
+            self._call_js(f'addLog("$ {json.dumps(cli_display)[1:-1]}", "text-neon-cyan")')
 
-    def apply_dark_mode_if_needed(self):
-        if QApplication.instance().styleHints().colorScheme() == Qt.ColorScheme.Dark:
-            dark_palette = QPalette()
-            dark_palette.setColor(QPalette.ColorRole.Window, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
-            dark_palette.setColor(QPalette.ColorRole.Base, QColor(25, 25, 25))
-            dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-            dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
-            dark_palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
-            dark_palette.setColor(QPalette.ColorRole.Button, QColor(53, 53, 53))
-            dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
-            dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-            dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+            env = os.environ.copy()
+            env['PYTHONUNBUFFERED'] = '1'
 
-            dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
-            dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+            working_dir = os.path.dirname(os.path.abspath(__file__))
+            script_path = os.path.join(working_dir, 'remwm.py')
 
-            QApplication.instance().setPalette(dark_palette)
+            # Verify script exists
+            if not os.path.exists(script_path):
+                self._call_js(f'addLog("ERROR: remwm.py not found at {json.dumps(script_path)}", "text-error")')
+                self._call_js('processingComplete()')
+                return
 
-    def update_system_info(self):
-        cuda_available = "CUDA: Available" if torch.cuda.is_available() else "CUDA: Not Available"
-        ram = psutil.virtual_memory()
-        ram_usage = ram.used // (1024 ** 2)
-        ram_total = ram.total // (1024 ** 2)
-        ram_percentage = ram.percent
-
-        vram_status = "Not Available"
-        if torch.cuda.is_available():
-            gpu_info = torch.cuda.get_device_properties(0)
-            vram_total = gpu_info.total_memory // (1024 ** 2)
-            vram_used = vram_total - (torch.cuda.memory_reserved(0) // (1024 ** 2))
-            vram_percentage = (vram_used / vram_total) * 100
-            vram_status = f"VRAM: {vram_used} MB / {vram_total} MB ({vram_percentage:.2f}%)"
-
-        status_text = (
-            f"{cuda_available} | RAM: {ram_usage} MB / {ram_total} MB ({ram_percentage}%) | {vram_status} | CPU Load: {psutil.cpu_percent()}%"
-        )
-        self.status_bar.showMessage(status_text)
-
-    def browse_input(self):
-        if self.radio_single.isChecked():
-            path, _ = QFileDialog.getOpenFileName(
-                self, 
-                "Select Input File", 
-                "", 
-                "All Supported Files (*.png *.jpg *.jpeg *.webp *.mp4 *.avi *.mov *.mkv *.flv *.wmv *.webm);;Images (*.png *.jpg *.jpeg *.webp);;Videos (*.mp4 *.avi *.mov *.mkv *.flv *.wmv *.webm)"
+            self.process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                env=env,
+                cwd=working_dir
             )
-        else:
-            path = QFileDialog.getExistingDirectory(self, "Select Input Directory")
-        if path:
-            self.input_path.setText(path)
-            # Update format options based on file type
-            if path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm')):
-                self.force_format_mp4.setEnabled(True)
-                self.force_format_avi.setEnabled(True)
-                if self.transparent_checkbox.isChecked():
-                    self.transparent_checkbox.setChecked(False)
-                    QMessageBox.information(self, "Info", "Transparency is not supported for videos. Disabled.")
 
-    def browse_output(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Output Directory")
-        if path:
-            self.output_path.setText(path)
+            for line in iter(self.process.stdout.readline, ''):
+                if not self.is_running:
+                    break
 
-    def start_processing(self):
-        input_path = self.input_path.text()
-        output_path = self.output_path.text()
+                line = line.strip()
+                if not line:
+                    continue
 
-        if not input_path or not output_path:
-            QMessageBox.critical(self, "Error", "Input and Output paths are required.")
-            return
+                # Parse progress
+                if 'overall_progress:' in line:
+                    try:
+                        progress_str = line.split('overall_progress:')[1].strip()
+                        progress = int(progress_str.replace('%', ''))
+                        self._call_js(f'updateProgress({progress})')
+                    except (ValueError, IndexError):
+                        pass
 
-        # Check if input is a video 
-        is_video = input_path.lower().endswith(('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'))
-        
-        # Check if transparency is enabled for video
-        if is_video and self.transparent_checkbox.isChecked():
-            QMessageBox.warning(self, "Warning", "Transparency is not supported for videos. Continuing with non-transparent processing.")
-            self.transparent_checkbox.setChecked(False)
-            
-        # Vérifier si FFmpeg est disponible pour les vidéos
-        if is_video:
-            ffmpeg_available = self.check_ffmpeg_available()
-            if not ffmpeg_available:
-                response = QMessageBox.warning(
-                    self, 
-                    "FFmpeg non disponible", 
-                    "FFmpeg n'est pas disponible sur votre système. Les vidéos traitées n'auront pas de son.\n\nVoulez-vous continuer quand même?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No
-                )
-                if response == QMessageBox.StandardButton.No:
-                    return
+                # Send log line to frontend
+                escaped = json.dumps(line)
 
-        overwrite = "--overwrite" if self.overwrite_checkbox.isChecked() else ""
-        transparent = "--transparent" if self.transparent_checkbox.isChecked() else ""
-        max_bbox_percent = self.max_bbox_percent_slider.value()
-        force_format = "None"
-        if self.force_format_png.isChecked():
-            force_format = "PNG"
-        elif self.force_format_webp.isChecked():
-            force_format = "WEBP"
-        elif self.force_format_jpg.isChecked():
-            force_format = "JPG"
-        elif self.force_format_mp4.isChecked():
-            force_format = "MP4"
-        elif self.force_format_avi.isChecked():
-            force_format = "AVI"
+                if 'error' in line.lower() or 'failed' in line.lower():
+                    color = 'text-error'
+                elif 'warning' in line.lower():
+                    color = 'text-yellow-400'
+                elif 'success' in line.lower() or 'done' in line.lower() or 'saved' in line.lower():
+                    color = 'text-neon-green'
+                else:
+                    color = 'text-gray-400'
 
-        force_format_option = f"--force-format={force_format}" if force_format != "None" else ""
+                self._call_js(f'addLog({escaped}, "{color}")')
 
-        command = [
-            "python", "remwm.py",
-            input_path, output_path,
-            overwrite, transparent,
-            f"--max-bbox-percent={max_bbox_percent}",
-            force_format_option
-        ]
-        command = [arg for arg in command if arg]  # Remove empty strings
+            self.process.wait()
+            self._call_js('processingComplete()')
 
-        self.process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,  # Line buffered
-            env={**os.environ, "PYTHONUNBUFFERED": "1"}
-        )
+        except Exception as e:
+            import traceback
+            error_msg = json.dumps(f"Error: {str(e)}")
+            self._call_js(f'addLog({error_msg}, "text-error")')
+            # Log full traceback for debugging
+            tb = json.dumps(traceback.format_exc())
+            self._call_js(f'addLog({tb}, "text-gray-500")')
+            self._call_js('processingComplete()')
 
-        self.worker = Worker(self.process)
-        self.worker.log_signal.connect(self.update_logs)
-        self.worker.progress_signal.connect(self.update_progress_bar)
-        self.worker.finished_signal.connect(self.reset_ui)
-        self.worker.error_signal.connect(self.handle_error)
+        finally:
+            self.is_running = False
+            self.process = None
 
-        self.thread = QThread()
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-        self.thread.start()
-
-        self.stop_button.setDisabled(False)
-        self.start_button.setDisabled(True)
-
-    def update_logs(self, line):
-        self.logs.append(line)
-
-    def update_progress_bar(self, progress):
-        self.progress_bar.setValue(progress)
+    def _call_js(self, js_code):
+        """Safely call JavaScript in the frontend"""
+        if self.window:
+            try:
+                self.window.evaluate_js(js_code)
+            except Exception:
+                pass
 
     def stop_processing(self):
+        """Stop the current processing"""
+        self.is_running = False
+
         if self.process:
             try:
-                if self.worker:
-                    self.worker.stop()
                 self.process.terminate()
-                # Donner un peu de temps au processus pour se terminer proprement
-                QTimer.singleShot(500, lambda: self.force_kill_if_needed())
-            except Exception as e:
-                logger.error(f"Erreur lors de l'arrêt du processus: {str(e)}")
-                self.reset_ui()
-
-    def force_kill_if_needed(self):
-        """Force l'arrêt du processus s'il est encore en cours d'exécution"""
-        if self.process and self.process.poll() is None:
-            try:
-                self.process.kill()
-                self.process.wait(timeout=1)
-            except:
+                try:
+                    self.process.wait(timeout=0.5)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+            except Exception:
                 pass
-        self.reset_ui()
 
-    def reset_ui(self):
-        self.stop_button.setDisabled(True)
-        self.start_button.setDisabled(False)
-        if self.thread and self.thread.isRunning():
-            self.thread.quit()
-            self.thread.wait()
-        self.process = None
-        self.thread = None
-        self.worker = None
+        return {'status': 'stopped'}
 
-    def save_config(self):
-        config = {
-            "input_path": self.input_path.text(),
-            "output_path": self.output_path.text(),
-            "overwrite": self.overwrite_checkbox.isChecked(),
-            "transparent": self.transparent_checkbox.isChecked(),
-            "max_bbox_percent": self.max_bbox_percent_slider.value(),
-            "force_format": "PNG" if self.force_format_png.isChecked() 
-                      else "WEBP" if self.force_format_webp.isChecked() 
-                      else "JPG" if self.force_format_jpg.isChecked()
-                      else "MP4" if self.force_format_mp4.isChecked()
-                      else "AVI" if self.force_format_avi.isChecked()
-                      else "None",
-            "mode": "single" if self.radio_single.isChecked() else "batch"
-        }
-        with open(CONFIG_FILE, "w") as f:
-            yaml.dump(config, f)
+    def preview_detection(self, settings):
+        """
+        Preview watermark detection via CLI subprocess.
+        Returns image with bounding boxes drawn as base64.
+        """
+        input_path = settings.get('input', '')
+        detection_prompt = settings.get('detection_prompt', 'watermark')
+        max_bbox = settings.get('max_bbox', 15)
 
-    def load_config(self):
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, "r") as f:
-                config = yaml.safe_load(f)
-                self.input_path.setText(config.get("input_path", ""))
-                self.output_path.setText(config.get("output_path", ""))
-                self.overwrite_checkbox.setChecked(config.get("overwrite", False))
-                self.transparent_checkbox.setChecked(config.get("transparent", False))
-                self.max_bbox_percent_slider.setValue(config.get("max_bbox_percent", 10))
-                force_format = config.get("force_format", "None")
-                if force_format == "PNG":
-                    self.force_format_png.setChecked(True)
-                elif force_format == "WEBP":
-                    self.force_format_webp.setChecked(True)
-                elif force_format == "JPG":
-                    self.force_format_jpg.setChecked(True)
-                elif force_format == "MP4":
-                    self.force_format_mp4.setChecked(True)
-                elif force_format == "AVI":
-                    self.force_format_avi.setChecked(True)
-                else:
-                    self.force_format_none.setChecked(True)
-                mode = config.get("mode", "single")
-                if mode == "single":
-                    self.radio_single.setChecked(True)
-                else:
-                    self.radio_batch.setChecked(True)
+        if not input_path:
+            return {'error': 'No input path specified'}
 
-    def handle_error(self, error_message):
-        """Gère les erreurs signalées par le worker"""
-        self.logs.append(f"<span style='color:red'>{error_message}</span>")
-        # Rendre les logs visibles en cas d'erreur
-        if not self.logs.isVisible():
-            self.toggle_logs_button.setChecked(True)
-            self.toggle_logs(True)
-        QMessageBox.critical(self, "Erreur", f"Une erreur est survenue: {error_message}")
-
-    def closeEvent(self, event):
-        self.save_config()
-        event.accept()
-
-    def check_ffmpeg_available(self):
-        """Vérifie si FFmpeg est disponible sur le système"""
         try:
-            # Essayer d'exécuter ffmpeg -version pour vérifier s'il est installé
-            subprocess.check_output(["ffmpeg", "-version"], stderr=subprocess.STDOUT)
-            return True
-        except (subprocess.SubprocessError, FileNotFoundError):
-            return False
+            # Call CLI with --preview flag
+            cmd = [
+                sys.executable, 'remwm.py',
+                input_path, '--preview',
+                '--max-bbox-percent', str(int(max_bbox)),
+                '--detection-prompt', detection_prompt
+            ]
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    gui = WatermarkRemoverGUI()
-    gui.show()
-    sys.exit(app.exec())
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=120,
+                cwd=os.path.dirname(os.path.abspath(__file__))
+            )
+
+            if result.returncode != 0:
+                return {'error': result.stderr or 'Preview failed'}
+
+            # Parse JSON output from CLI
+            output = result.stdout.strip()
+            # Find JSON in output (may have log lines before it)
+            for line in output.split('\n'):
+                if line.startswith('{'):
+                    return json.loads(line)
+
+            return {'error': 'No preview data returned'}
+
+        except subprocess.TimeoutExpired:
+            return {'error': 'Preview timed out'}
+        except Exception as e:
+            return {'error': str(e)}
+
+
+def main():
+    """Main entry point"""
+    api = Api()
+
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    ui_path = os.path.join(script_dir, 'ui', 'index.html')
+
+    window = webview.create_window(
+        'WatermarkRemover AI - Ohio Edition',
+        ui_path,
+        js_api=api,
+        width=950,
+        height=860,
+        min_size=(800, 600),
+        background_color='#050505'
+    )
+
+    api.set_window(window)
+    webview.start()
+
+
+if __name__ == '__main__':
+    main()

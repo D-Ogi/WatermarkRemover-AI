@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WM REMOVER - OHIO EDITION</title>
+
+    <!-- Tailwind + Alpine + Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+    <!-- Base fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Rubik+Glitch&family=Inter:wght@400;800;900&display=swap" rel="stylesheet">
+    <!-- Theme fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Dancing+Script:wght@700&family=Oswald:wght@400;700&family=Playfair+Display:ital,wght@0,400;1,400&family=Mali:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        mono: ['"Space Mono"', 'monospace'],
+                        glitch: ['"Rubik Glitch"', 'cursive'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'void': '#050505',
+                        'card': '#111116',
+                        'neon-green': '#00ff88',
+                        'neon-pink': '#ff006e',
+                        'neon-cyan': '#00f3ff',
+                        'error': '#ff3333',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 0.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                        'marquee': 'marquee 10s linear infinite',
+                    },
+                    keyframes: {
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        },
+                        marquee: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #050505; color: white; }
+
+        /* CRT Scanline Effect */
+        .crt::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #111; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #00ff88; }
+
+        .glass-panel {
+            background: rgba(17, 17, 22, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+    <!-- Theme styles -->
+    <link rel="stylesheet" href="themes.css">
+</head>
+<body class="h-screen w-screen flex crt selection:bg-neon-pink selection:text-white overflow-hidden"
+      x-data="brainrotApp()" x-init="init()">
+
+    <!-- BACKGROUND CHAOS -->
+    <div class="fixed inset-0 z-0 opacity-30 pointer-events-none">
+        <div class="absolute top-10 left-10 text-9xl animate-pulse text-neon-green">💀</div>
+        <div class="absolute bottom-20 right-10 text-8xl animate-bounce text-neon-pink">🔥</div>
+        <div class="absolute top-1/2 left-1/4 w-96 h-96 bg-neon-cyan blur-[150px] rounded-full mix-blend-screen opacity-30"></div>
+    </div>
+
+    <!-- MAIN UI CONTAINER - fills entire window -->
+    <main class="relative z-10 w-full h-full flex flex-col md:flex-row overflow-hidden">
+
+        <!-- LEFT SIDEBAR (Controls) -->
+        <aside class="w-96 flex-shrink-0 bg-black/60 backdrop-blur-md border-r border-white/10 p-4 flex flex-col gap-4 overflow-y-auto">
+
+            <!-- HEADER + THEME/LANG SELECTORS -->
+            <div class="flex items-start justify-between gap-2">
+                <!-- Logo -->
+                <div class="space-y-1">
+                    <h1 class="text-4xl font-glitch text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-cyan leading-none filter drop-shadow-[2px_2px_0px_rgba(255,0,255,0.5)]">
+                        WM<br>REMOVER
+                    </h1>
+                    <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">Ohio Edition v6.9</p>
+                </div>
+                <!-- Theme & Language Selectors -->
+                <div class="flex flex-col gap-1">
+                    <select x-model="theme" @change="switchTheme(theme)" class="bg-black/50 border border-white/20 text-white text-[10px] rounded-lg px-2 py-1 focus:border-neon-pink outline-none font-mono">
+                        <option value="brainrot">Brainrot</option>
+                        <option value="slay">Slay Queen</option>
+                        <option value="sigma">Sigma</option>
+                        <option value="witch">WitchTok</option>
+                        <option value="korpo">Korpo</option>
+                        <option value="coquette">Coquette</option>
+                        <option value="xp">Windows XP</option>
+                        <option value="anime">Anime / Kawaii</option>
+                    </select>
+                    <!-- Language selector placeholder (coming soon) -->
+                    <select disabled class="bg-black/30 border border-white/10 text-gray-500 text-[10px] rounded-lg px-2 py-1 outline-none font-mono cursor-not-allowed">
+                        <option>Lang (soon)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- MODE SELECTOR -->
+            <div class="space-y-2">
+                <label class="text-xs font-bold text-neon-green uppercase tracking-wider">Select Vibe (Mode)</label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button @click="mode='single'" :class="mode=='single' ? 'bg-neon-green text-black shadow-[0_0_15px_#00ff88]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10">
+                        SOLO
+                    </button>
+                    <button @click="mode='batch'" :class="mode=='batch' ? 'bg-neon-cyan text-black shadow-[0_0_15px_#00f3ff]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10">
+                        SQUAD
+                    </button>
+                </div>
+            </div>
+
+            <!-- SETTINGS -->
+            <div class="space-y-4 flex-1">
+
+                <!-- Toggle -->
+                <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span class="text-xs font-bold text-gray-300">Gaslight Files <br><span class="text-[10px] text-gray-500 font-mono">(Overwrite)</span></span>
+                    <button @click="overwrite = !overwrite" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="overwrite ? 'bg-neon-pink' : 'bg-gray-700'">
+                        <div class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300" :class="overwrite ? 'left-7' : 'left-1'"></div>
+                    </button>
+                </div>
+
+                <!-- Toggle -->
+                <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
+                    <span class="text-xs font-bold text-gray-300">Ghost Mode 👻 <br><span class="text-[10px] text-gray-500 font-mono">(Transparent)</span></span>
+                    <button @click="transparent = !transparent" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="transparent ? 'bg-neon-green' : 'bg-gray-700'">
+                        <div class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300" :class="transparent ? 'left-7' : 'left-1'"></div>
+                    </button>
+                </div>
+
+                <!-- Slider -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex justify-between text-xs font-mono">
+                        <span class="text-neon-cyan">Sigma Detect</span>
+                        <span x-text="detection + '%'">10%</span>
+                    </div>
+                    <input type="range" min="1" max="100" x-model="detection" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-neon-cyan">
+                </div>
+
+                <!-- Detection Prompt -->
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase">Detection Prompt</label>
+                    <input type="text" x-model="detectionPrompt" list="prompt-suggestions"
+                           placeholder="watermark"
+                           class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-cyan outline-none font-mono">
+                    <datalist id="prompt-suggestions">
+                        <option value="watermark">
+                        <option value="watermark logo">
+                        <option value="watermark Sora logo">
+                        <option value="watermark text">
+                        <option value="Getty Images">
+                        <option value="Shutterstock">
+                        <option value="Adobe Stock">
+                        <option value="iStock">
+                    </datalist>
+                </div>
+
+                <!-- PREVIEW BUTTON -->
+                <button @click="runPreview()" :disabled="!inputPath || previewLoading"
+                        class="w-full py-3 bg-neon-cyan/20 hover:bg-neon-cyan/40 text-neon-cyan border border-neon-cyan/50 rounded-xl font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        :class="previewLoading ? 'animate-pulse' : ''">
+                    <span x-text="previewLoading ? '🔄 Detecting...' : '🔍 Preview Detection'"></span>
+                </button>
+
+                <!-- Video Settings Section (only for video files) -->
+                <div x-show="isVideoFile(inputPath)" x-transition
+                     class="space-y-3 p-3 bg-purple-900/20 rounded-xl border border-purple-500/30">
+                    <div class="text-xs font-bold text-purple-400 uppercase flex items-center gap-2">
+                        <span>🎬</span> Video Settings
+                    </div>
+
+                    <!-- Detection Skip Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-mono">
+                            <span class="text-purple-300">Detection Skip</span>
+                            <span x-text="detectionSkip + ' frames'"></span>
+                        </div>
+                        <input type="range" min="1" max="10" x-model="detectionSkip"
+                               class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <div class="text-[9px] text-gray-500">Higher = faster, but may miss short watermarks</div>
+                    </div>
+
+                    <!-- Fade In Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-mono">
+                            <span class="text-purple-300">Fade In Buffer</span>
+                            <span x-text="fadeIn + 's'"></span>
+                        </div>
+                        <input type="range" min="0" max="2" step="0.1" x-model="fadeIn"
+                               class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <div class="text-[9px] text-gray-500">Extend removal backwards for fade-in watermarks</div>
+                    </div>
+
+                    <!-- Fade Out Slider -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-mono">
+                            <span class="text-purple-300">Fade Out Buffer</span>
+                            <span x-text="fadeOut + 's'"></span>
+                        </div>
+                        <input type="range" min="0" max="2" step="0.1" x-model="fadeOut"
+                               class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                        <div class="text-[9px] text-gray-500">Extend removal forwards for fade-out watermarks</div>
+                    </div>
+                </div>
+
+                <!-- Format Dropdown -->
+                <div class="space-y-1">
+                    <label class="text-[10px] text-gray-500 uppercase">Output Drip</label>
+                    <select x-model="format" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-green outline-none font-mono">
+                        <option value="None">Auto (Keep Original)</option>
+                        <option value="PNG">PNG (High Qual)</option>
+                        <option value="JPG">JPG (Basic)</option>
+                        <option value="WEBP">WEBP (Fast)</option>
+                        <option value="MP4">MP4 (Video)</option>
+                        <option value="AVI">AVI (Video)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- START BUTTON -->
+            <button @click="startProcessing()" :disabled="processing || !inputPath"
+                class="relative group w-full py-5 bg-neon-green rounded-xl font-black text-black text-xl overflow-hidden hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="relative z-10 flex items-center justify-center gap-2" x-text="processing ? 'COOKING... 👨‍🍳' : 'LET HIM COOK 🔥'">
+                    LET HIM COOK 🔥
+                </span>
+                <!-- Button Glow -->
+                <div class="absolute inset-0 bg-white/30 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+            </button>
+
+        </aside>
+
+        <!-- RIGHT CONTENT (Preview & Logs) -->
+        <div class="flex-1 min-w-[400px] flex flex-col relative bg-black/40 backdrop-blur-sm overflow-hidden">
+
+            <!-- MARQUEE BAR -->
+            <div class="bg-neon-pink text-black font-bold text-xs py-1 overflow-hidden whitespace-nowrap border-b border-neon-pink">
+                <div class="animate-marquee inline-block">
+                    NO CAP /// JUST REMOVE IT /// SKIBIDI TOILET APPROVED /// DON'T TELL THE TEACHER /// AI IS TAKING OVER /// YOUR WATERMARK IS COOKED ///
+                    NO CAP /// JUST REMOVE IT /// SKIBIDI TOILET APPROVED /// DON'T TELL THE TEACHER /// AI IS TAKING OVER /// YOUR WATERMARK IS COOKED ///
+                </div>
+            </div>
+
+            <!-- DRAG & DROP ZONE -->
+            <div class="flex-1 p-6 flex flex-col gap-4">
+
+                <!-- Input Box -->
+                <div @click="browseInput()"
+                     class="border-2 border-dashed border-white/20 rounded-2xl flex-1 flex flex-col items-center justify-center p-8 transition-all hover:border-neon-green hover:bg-neon-green/5 group cursor-pointer relative overflow-hidden">
+                    <template x-if="!inputPath">
+                        <div class="text-center">
+                            <div class="text-5xl mb-4 group-hover:animate-bounce">📥</div>
+                            <h3 class="text-xl font-bold text-white group-hover:text-neon-green">Yeet Files Here</h3>
+                            <p class="text-sm text-gray-500 mt-2 font-mono">or click to browse (don't be shy)</p>
+                        </div>
+                    </template>
+                    <template x-if="inputPath">
+                        <div class="text-center">
+                            <div class="text-5xl mb-4" x-text="isVideoFile(inputPath) ? '🎬' : '✅'"></div>
+                            <h3 class="text-lg font-bold text-neon-green break-all px-4" x-text="inputPath"></h3>
+                            <p class="text-sm text-gray-500 mt-2 font-mono" x-text="isVideoFile(inputPath) ? 'video file - click to change' : 'click to change'"></p>
+                        </div>
+                    </template>
+
+                    <!-- Background Grid Animation -->
+                    <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwgMjU1LSAxMzYsIDAuMSkiLz48L3N2Zz4=')] opacity-20"></div>
+                </div>
+
+                <!-- Output Path Input -->
+                <div class="flex gap-2">
+                    <div class="flex-1 min-w-0 bg-card border border-white/10 rounded-xl p-3 flex items-center gap-2">
+                        <span class="text-gray-500 flex-shrink-0">📂</span>
+                        <input type="text" x-model="outputPath" placeholder="Output folder..." class="bg-transparent text-sm text-gray-300 w-full outline-none font-mono truncate">
+                    </div>
+                    <button @click="browseOutput()" class="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white px-3 py-3 rounded-xl border border-white/10 transition-colors text-sm">Browse</button>
+                </div>
+
+            </div>
+
+            <!-- LOGS / TERMINAL AREA -->
+            <div class="h-52 bg-black/70 backdrop-blur-md border-t border-white/10 p-4 font-mono text-xs overflow-y-auto relative select-text cursor-text" id="logs-container">
+                <div class="absolute top-2 right-2 flex gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-yellow-500"></span>
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                </div>
+
+                <div class="space-y-1">
+                    <template x-for="log in logs" :key="log.id">
+                        <div :class="log.color">
+                            <span class="opacity-50" x-text="'[' + log.time + ']'"></span>
+                            <span x-text="log.msg"></span>
+                        </div>
+                    </template>
+                    <div x-show="processing" class="text-neon-green animate-pulse">_ cooking_in_progress...</div>
+                </div>
+            </div>
+
+            <!-- STATUS BAR -->
+            <div class="bg-black/60 backdrop-blur-md border-t border-white/10 p-2 px-4 flex justify-between items-center text-[10px] font-mono text-gray-500 uppercase">
+                <div class="flex gap-4">
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full" :class="systemInfo.cuda ? 'bg-neon-green' : 'bg-red-500'"></span>
+                        CUDA: <span x-text="systemInfo.cuda ? 'ON' : 'OFF'"></span>
+                    </span>
+                    <span class="flex items-center gap-1">
+                        <span class="w-2 h-2 rounded-full" :class="systemInfo.ffmpeg ? 'bg-neon-green' : 'bg-yellow-500'"></span>
+                        FFMPEG: <span x-text="systemInfo.ffmpeg ? 'ON' : 'OFF'"></span>
+                    </span>
+                    <span>RAM: <span x-text="systemInfo.ram + '%'"></span></span>
+                </div>
+                <div x-text="systemInfo.gpu || 'CPU MODE'"></div>
+            </div>
+
+            <!-- PROGRESS OVERLAY (Visible when processing) -->
+            <div x-show="processing"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 backdrop-blur-none"
+                 x-transition:enter-end="opacity-100 backdrop-blur-sm"
+                 class="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-10">
+
+                <h2 class="text-4xl font-black italic text-white mb-6 animate-pulse" x-text="statusMsg">REMOVING CRINGE...</h2>
+
+                <!-- Custom Progress Bar -->
+                <div class="w-full max-w-md h-8 bg-gray-800 rounded-full border-2 border-white overflow-hidden relative shadow-[0_0_20px_#ff006e]">
+                    <div class="h-full bg-gradient-to-r from-neon-pink via-purple-500 to-neon-cyan transition-all duration-300 relative" :style="'width: ' + progress + '%'">
+                        <!-- Moving Stripe -->
+                        <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(255,255,255,0.2)_25%,transparent_25%,transparent_50%,rgba(255,255,255,0.2)_50%,rgba(255,255,255,0.2)_75%,transparent_75%,transparent)] bg-[length:20px_20px] animate-[marquee_1s_linear_infinite]"></div>
+                    </div>
+                </div>
+
+                <p class="mt-4 text-neon-cyan font-mono text-lg" x-text="progress + '%'"></p>
+
+                <button @click="stopProcessing()" class="mt-8 px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-full font-bold transition-all uppercase text-xs tracking-widest">
+                    Panic Button (Stop)
+                </button>
+            </div>
+
+            <!-- PREVIEW MODAL -->
+            <div x-show="previewMode"
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="transition ease-in duration-150"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="absolute inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4"
+                 @click.self="previewMode = false">
+
+                <div class="bg-card border border-white/10 rounded-2xl p-6 max-w-3xl w-full max-h-full overflow-auto shadow-[0_0_50px_rgba(0,243,255,0.2)]">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-black text-neon-cyan">Detection Preview</h2>
+                        <button @click="previewMode = false" class="text-gray-500 hover:text-white text-2xl">&times;</button>
+                    </div>
+
+                    <!-- Preview Image -->
+                    <div class="bg-black rounded-xl overflow-hidden mb-4 flex items-center justify-center min-h-[200px]">
+                        <template x-if="previewImage">
+                            <img :src="'data:image/png;base64,' + previewImage" class="max-w-full max-h-[400px] object-contain">
+                        </template>
+                        <template x-if="!previewImage && previewLoading">
+                            <div class="text-center">
+                                <div class="text-gray-500 animate-pulse mb-2">Loading preview...</div>
+                                <div class="text-gray-600 text-xs">(First run may download ~1.5GB model)</div>
+                            </div>
+                        </template>
+                        <template x-if="previewError">
+                            <div class="p-4 flex flex-col items-center gap-3 max-w-full">
+                                <div class="text-error text-sm break-all max-h-[150px] overflow-y-auto w-full" x-text="previewError"></div>
+                                <button @click="navigator.clipboard.writeText(previewError); $el.textContent = 'Copied!'; setTimeout(() => $el.textContent = '📋 Copy Error', 1500)"
+                                        class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs rounded-lg border border-white/10 transition-colors">
+                                    📋 Copy Error
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Detection Info -->
+                    <div class="grid grid-cols-2 gap-4 text-sm font-mono mb-4">
+                        <div class="bg-white/5 p-3 rounded-lg">
+                            <span class="text-gray-500">Prompt:</span>
+                            <span class="text-neon-cyan ml-2" x-text="previewPromptUsed || '-'"></span>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-lg">
+                            <span class="text-gray-500">Detected:</span>
+                            <span class="text-neon-green ml-2" x-text="previewDetections.length + ' region(s)'"></span>
+                        </div>
+                        <div class="bg-white/5 p-3 rounded-lg col-span-2">
+                            <span class="text-gray-500">Source:</span>
+                            <span class="text-white ml-2" x-text="previewSource || '-'"></span>
+                        </div>
+                    </div>
+
+                    <!-- Detections List -->
+                    <template x-if="previewDetections.length > 0">
+                        <div class="space-y-2 mb-4">
+                            <div class="text-xs text-gray-500 uppercase">Bounding Boxes:</div>
+                            <template x-for="(det, idx) in previewDetections" :key="idx">
+                                <div class="flex items-center gap-2 text-xs font-mono bg-white/5 p-2 rounded">
+                                    <span class="w-3 h-3 rounded-full" :class="det.accepted ? 'bg-neon-green' : 'bg-error'"></span>
+                                    <span class="text-gray-400" x-text="'#' + (idx + 1)"></span>
+                                    <span class="text-white" x-text="det.area_percent + '% of image'"></span>
+                                    <span x-show="!det.accepted" class="text-error">(too large, will skip)</span>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 justify-end">
+                        <button @click="runPreview()" :disabled="previewLoading"
+                                class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-all disabled:opacity-50">
+                            <span x-text="previewLoading ? 'Loading...' : '🔄 Try Again'"></span>
+                        </button>
+                        <button @click="previewMode = false"
+                                class="px-4 py-2 bg-neon-cyan text-black rounded-lg font-bold hover:bg-neon-cyan/80 transition-all">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Store reference to Alpine app instance for Python callbacks (Alpine 3.x compatible)
+        let appInstance = null;
+
+        // Global functions for Python to call - dispatch events for Alpine to catch
+        function updateProgress(percent) {
+            window.dispatchEvent(new CustomEvent('pywebview-progress', {
+                detail: { percent }
+            }));
+        }
+
+        function addLog(msg, color = 'text-gray-400') {
+            window.dispatchEvent(new CustomEvent('pywebview-log', {
+                detail: { msg, color }
+            }));
+        }
+
+        function processingComplete() {
+            window.dispatchEvent(new CustomEvent('pywebview-complete'));
+        }
+
+        // Theme switcher function
+        function switchTheme(themeName) {
+            const themes = ['theme-slay', 'theme-sigma', 'theme-witch', 'theme-korpo', 'theme-coquette', 'theme-xp', 'theme-anime'];
+            document.body.classList.remove(...themes);
+            if (themeName !== 'brainrot') {
+                document.body.classList.add('theme-' + themeName);
+            }
+        }
+
+        function brainrotApp() {
+            return {
+                mode: 'single',
+                overwrite: false,
+                transparent: false,
+                detection: 15,
+                format: 'None',
+                inputPath: '',
+                outputPath: '',
+                processing: false,
+                progress: 0,
+                statusMsg: 'REMOVING CRINGE...',
+                theme: 'brainrot',
+                logSeq: Date.now(), // helps keep keys unique across reloads
+                logs: [
+                    {id: 1, time: '00:00:00', msg: 'System initialized. No cap.', color: 'text-gray-400'},
+                ],
+                systemInfo: {
+                    cuda: false,
+                    ram: 0,
+                    gpu: 'Checking...',
+                    ffmpeg: false
+                },
+
+                // Detection prompt
+                detectionPrompt: 'watermark',
+
+                // Preview modal state
+                previewMode: false,
+                previewLoading: false,
+                previewImage: null,
+                previewDetections: [],
+                previewPromptUsed: '',
+                previewSource: '',
+                previewError: null,
+
+                // Video settings (two-pass processing)
+                detectionSkip: 1,
+                fadeIn: 0,
+                fadeOut: 0,
+
+                // Slang messages for status
+                slangMessages: [
+                    "REMOVING CRINGE...",
+                    "RIZZING UP THE PIXELS...",
+                    "FANUM TAX APPLIED...",
+                    "MEWING STREAK ACTIVE...",
+                    "DELETING WATERMARK FR FR...",
+                    "ASKING AI NICELY...",
+                    "COOKING LOGIC...",
+                    "L + RATIO + WATERMARK...",
+                ],
+
+                async init() {
+                    // Store reference for global Python callbacks
+                    appInstance = this;
+
+                    // Listen for pywebview events (guard against duplicate listeners when window reloads)
+                    if (window.__pywebviewLogHandler) {
+                        window.removeEventListener('pywebview-log', window.__pywebviewLogHandler);
+                    }
+                    window.__pywebviewLogHandler = (e) => {
+                        this.addLogEntry(e.detail.msg, e.detail.color);
+                    };
+                    window.addEventListener('pywebview-log', window.__pywebviewLogHandler);
+
+                    if (window.__pywebviewProgressHandler) {
+                        window.removeEventListener('pywebview-progress', window.__pywebviewProgressHandler);
+                    }
+                    window.__pywebviewProgressHandler = (e) => {
+                        this.progress = e.detail.percent;
+                    };
+                    window.addEventListener('pywebview-progress', window.__pywebviewProgressHandler);
+
+                    if (window.__pywebviewCompleteHandler) {
+                        window.removeEventListener('pywebview-complete', window.__pywebviewCompleteHandler);
+                    }
+                    window.__pywebviewCompleteHandler = () => {
+                        this.processing = false;
+                        this.progress = 100;
+                        this.addLogEntry("DONE. File is clean. Sheesh.", "text-neon-pink font-bold");
+                    };
+                    window.addEventListener('pywebview-complete', window.__pywebviewCompleteHandler);
+
+                    // Load saved config
+                    if (window.pywebview) {
+                        try {
+                            const config = await pywebview.api.get_config();
+                            if (config) {
+                                this.inputPath = config.input_path || '';
+                                this.outputPath = config.output_path || '';
+                                this.overwrite = config.overwrite || false;
+                                this.transparent = config.transparent || false;
+                                this.detection = config.max_bbox_percent || 15;
+                                this.format = config.force_format || 'None';
+                                this.mode = config.mode || 'single';
+                                this.detectionPrompt = config.detection_prompt || 'watermark';
+                                // Video settings
+                                this.detectionSkip = config.detection_skip || 1;
+                                this.fadeIn = config.fade_in || 0;
+                                this.fadeOut = config.fade_out || 0;
+                                // Theme
+                                this.theme = config.theme || 'brainrot';
+                                switchTheme(this.theme);
+                            }
+                        } catch (e) {
+                            console.log('Config load failed:', e);
+                        }
+                    }
+
+                    // Get static info once (CUDA, FFmpeg, GPU)
+                    this.loadStaticInfo();
+                    // Poll dynamic info (RAM, CPU) every 3 seconds
+                    setInterval(() => this.updateDynamicInfo(), 3000);
+                },
+
+                async loadStaticInfo() {
+                    if (window.pywebview) {
+                        try {
+                            const info = await pywebview.api.get_static_info();
+                            this.systemInfo.cuda = info.cuda;
+                            this.systemInfo.gpu = info.gpu_name || 'CPU MODE';
+                            this.systemInfo.ffmpeg = info.ffmpeg;
+                        } catch (e) {
+                            // API not ready yet, retry
+                            setTimeout(() => this.loadStaticInfo(), 500);
+                        }
+                    } else {
+                        setTimeout(() => this.loadStaticInfo(), 500);
+                    }
+                },
+
+                async updateDynamicInfo() {
+                    if (window.pywebview) {
+                        try {
+                            const info = await pywebview.api.get_dynamic_info();
+                            this.systemInfo.ram = Math.round(info.ram_percent);
+                        } catch (e) {
+                            // ignore
+                        }
+                    }
+                },
+
+                isVideoFile(path) {
+                    if (!path) return false;
+                    const ext = path.toLowerCase().split('.').pop();
+                    return ['mp4', 'avi', 'mov', 'mkv', 'flv', 'wmv', 'webm'].includes(ext);
+                },
+
+                async browseInput() {
+                    const picker =
+                        window.pywebview?.api?.browse_file ||
+                        (this.mode === 'single'
+                            ? window.pywebview?.api?.browse_file
+                            : window.pywebview?.api?.browse_folder);
+
+                    if (!picker) {
+                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        return;
+                    }
+
+                    const path =
+                        this.mode === 'single'
+                            ? await window.pywebview.api.browse_file()
+                            : await window.pywebview.api.browse_folder();
+
+                    if (path) {
+                        this.inputPath = path;
+                    }
+                },
+
+                async browseOutput() {
+                    if (!window.pywebview?.api?.browse_folder) {
+                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        return;
+                    }
+
+                    const path = await pywebview.api.browse_folder();
+                    if (path) {
+                        this.outputPath = path;
+                    }
+                },
+
+                async startProcessing() {
+                    if (!this.inputPath) {
+                        this.addLogEntry("No input selected! Pick a file first.", "text-error");
+                        return;
+                    }
+
+                    // Check for video + transparency warning
+                    if (this.isVideoFile(this.inputPath) && this.transparent) {
+                        this.addLogEntry("Ghost mode doesn't work with videos. Turning it off.", "text-yellow-400");
+                        this.transparent = false;
+                    }
+
+                    // Check for FFmpeg warning
+                    if (this.isVideoFile(this.inputPath) && !this.systemInfo.ffmpeg) {
+                        this.addLogEntry("FFmpeg not found! Video will have no audio.", "text-yellow-400");
+                    }
+
+                    this.processing = true;
+                    this.progress = 0;
+                    this.addLogEntry("Starting process... Hold tight.", "text-white");
+                    this.addLogEntry("(First run may download AI models - be patient!)", "text-gray-500");
+
+                    // Update status message randomly
+                    const statusInterval = setInterval(() => {
+                        if (this.processing) {
+                            this.statusMsg = this.slangMessages[Math.floor(Math.random() * this.slangMessages.length)];
+                        } else {
+                            clearInterval(statusInterval);
+                        }
+                    }, 2000);
+
+                    if (window.pywebview && window.pywebview.api) {
+                        try {
+                            const result = await pywebview.api.start_processing({
+                                input: this.inputPath,
+                                output: this.outputPath,
+                                overwrite: this.overwrite,
+                                transparent: this.transparent,
+                                max_bbox: this.detection,
+                                format: this.format,
+                                mode: this.mode,
+                                detection_prompt: this.detectionPrompt || 'watermark',
+                                // Video settings
+                                detection_skip: parseInt(this.detectionSkip) || 1,
+                                fade_in: parseFloat(this.fadeIn) || 0,
+                                fade_out: parseFloat(this.fadeOut) || 0
+                            });
+
+                            // Check for error response from backend
+                            if (result && result.error) {
+                                this.addLogEntry("Error: " + result.error, "text-error");
+                                this.processing = false;
+                                clearInterval(statusInterval);
+                                return;
+                            }
+                        } catch (e) {
+                            this.addLogEntry("Error: " + e.message, "text-error");
+                            this.processing = false;
+                            clearInterval(statusInterval);
+                        }
+                    } else {
+                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        this.processing = false;
+                        clearInterval(statusInterval);
+                    }
+                },
+
+                async stopProcessing() {
+                    if (window.pywebview) {
+                        await pywebview.api.stop_processing();
+                    }
+                    this.processing = false;
+                    this.addLogEntry("Process killed by user. Cringe.", "text-error");
+                },
+
+                addLogEntry(msg, color = 'text-gray-400') {
+                    const now = new Date();
+                    const time = now.toTimeString().split(' ')[0];
+
+                    // Use push() - Alpine.js 3.x handles array mutations correctly
+                    this.logs.push({
+                        id: this.logSeq++,
+                        time: time,
+                        msg: msg,
+                        color: color
+                    });
+
+                    // Keep logs limited - use slice() to create new array instead of shift()
+                    if (this.logs.length > 100) {
+                        this.logs = this.logs.slice(-100);
+                    }
+
+                    // Auto scroll logs
+                    this.$nextTick(() => {
+                        const container = document.getElementById('logs-container');
+                        if (container) container.scrollTop = container.scrollHeight;
+                    });
+                },
+
+                // Preview detection
+                async runPreview() {
+                    if (!this.inputPath) {
+                        this.addLogEntry("Select an input first!", "text-error");
+                        return;
+                    }
+
+                    this.previewLoading = true;
+                    this.previewError = null;
+                    this.previewImage = null;  // Clear old preview immediately
+                    this.previewDetections = [];
+                    this.previewMode = true;
+
+                    if (window.pywebview) {
+                        try {
+                            const result = await pywebview.api.preview_detection({
+                                input: this.inputPath,
+                                detection_prompt: this.detectionPrompt || 'watermark',
+                                max_bbox: this.detection
+                            });
+
+                            if (result.error) {
+                                this.previewError = result.error;
+                                this.previewImage = null;
+                                this.previewDetections = [];
+                                this.addLogEntry("Preview failed: " + result.error, "text-error");
+                            } else {
+                                this.previewImage = result.image;
+                                this.previewDetections = result.detections || [];
+                                this.previewPromptUsed = result.prompt_used;
+                                this.previewSource = result.source;
+                                this.previewError = null;
+
+                                const accepted = this.previewDetections.filter(d => d.accepted).length;
+                                const total = this.previewDetections.length;
+                                this.addLogEntry(`Preview: ${total} detected, ${accepted} will be removed`, "text-neon-cyan");
+                            }
+                        } catch (e) {
+                            this.previewError = "API error: " + e.message;
+                            this.addLogEntry("Preview error: " + e.message, "text-error");
+                        }
+                    }
+
+                    this.previewLoading = false;
+                },
+
+                // Save config on window close (called from Python)
+                getConfig() {
+                    return {
+                        input_path: this.inputPath,
+                        output_path: this.outputPath,
+                        overwrite: this.overwrite,
+                        transparent: this.transparent,
+                        max_bbox_percent: this.detection,
+                        force_format: this.format,
+                        mode: this.mode,
+                        detection_prompt: this.detectionPrompt,
+                        // Video settings
+                        detection_skip: parseInt(this.detectionSkip) || 1,
+                        fade_in: parseFloat(this.fadeIn) || 0,
+                        fade_out: parseFloat(this.fadeOut) || 0,
+                        // Theme
+                        theme: this.theme
+                    };
+                }
+            }
+        }
+    </script>
+</body>
+</html>

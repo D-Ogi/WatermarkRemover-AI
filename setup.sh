@@ -1,126 +1,85 @@
 #!/usr/bin/env bash
-
-# Exit immediately if a command exits with a non-zero status
 set -e
 
-# Default values
-ENV_NAME="py312aiwatermark"
-ENV_FILE="environment.yml"
-INSTALL_DIR=""
-FORCE_REINSTALL=false
-USE_DEFAULT_DIR=true
+echo ""
+echo "  ============================================="
+echo "     WatermarkRemover-AI Setup (Linux/macOS)"
+echo "  ============================================="
+echo ""
 
-# Function to detect previously used directory
-find_existing_install_dir() {
-    if [ -d "$PWD/conda_envs" ] && conda env list | grep -q "^${ENV_NAME}\\s"; then
-        echo "$PWD/conda_envs"
-    else
-        echo ""
-    fi
-}
-
-# Function to display usage
-usage() {
-    echo "Usage: $0 [options] -- [script arguments]"
-    echo "Options:"
-    echo "  --activate                Activate the Conda environment and provide instructions to deactivate it."
-    echo "  --reinstall               Reinstall the Conda environment."
-    echo "  --current-dir             Use the current directory as the root for the Conda environment."
-    echo "  --help                    Show this help message."
-    echo "Script Arguments:"
-    echo "  Any arguments after -- will be passed directly to remwm.py."
-    exit 1
-}
-
-# Parse arguments
-ACTIVATE_ONLY=false
-SCRIPT_ARGS=()
-
-while [[ $# -gt 0 ]]; do
-    case "$1" in
-        --activate)
-            ACTIVATE_ONLY=true
-            shift
-            ;;
-        --reinstall)
-            FORCE_REINSTALL=true
-            shift
-            ;;
-        --current-dir)
-            USE_DEFAULT_DIR=false
-            INSTALL_DIR="$PWD/conda_envs"
-            shift
-            ;;
-        --help)
-            usage
-            ;;
-        --)
-            shift
-            SCRIPT_ARGS=("$@")
+# Check Python version
+PYTHON_CMD=""
+for cmd in python3.12 python3.11 python3.10 python3 python; do
+    if command -v $cmd &> /dev/null; then
+        version=$($cmd -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')" 2>/dev/null)
+        major=$(echo $version | cut -d. -f1)
+        minor=$(echo $version | cut -d. -f2)
+        if [ "$major" -eq 3 ] && [ "$minor" -ge 10 ]; then
+            PYTHON_CMD=$cmd
+            echo "  [OK] Found $PYTHON_CMD (version $version)"
             break
-            ;;
-        *)
-            echo "Unknown option: $1"
-            usage
-            ;;
-    esac
+        fi
+    fi
 done
 
-# Check if Conda is installed
-if ! command -v conda &> /dev/null; then
-    echo "Conda could not be found. Please install Conda or Miniconda and try again."
+if [ -z "$PYTHON_CMD" ]; then
+    echo "  [X] Python 3.10+ is required but not found."
+    echo "      Please install Python 3.10 or higher."
     exit 1
 fi
 
-# Determine installation directory
-if [ "$USE_DEFAULT_DIR" = false ]; then
-    echo "Using current directory as the root for Conda environments: $INSTALL_DIR"
-    export CONDA_ENVS_PATH="$INSTALL_DIR"
-    export CONDA_PKGS_DIRS="$INSTALL_DIR/pkgs"
+# Create virtual environment
+VENV_DIR="venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "  [*] Creating virtual environment..."
+    $PYTHON_CMD -m venv $VENV_DIR
+    echo "  [OK] Virtual environment created"
 else
-    EXISTING_DIR=$(find_existing_install_dir)
-    if [ -n "$EXISTING_DIR" ]; then
-        echo "Detected existing installation in: $EXISTING_DIR"
-        export CONDA_ENVS_PATH="$EXISTING_DIR"
-        export CONDA_PKGS_DIRS="$EXISTING_DIR/pkgs"
-    else
-        echo "Using default Conda directory."
-    fi
+    echo "  [OK] Virtual environment exists"
 fi
 
-# Check if the environment already exists or needs to be reinstalled
-if conda env list | grep -q "^${ENV_NAME}\\s"; then
-    if [ "$FORCE_REINSTALL" = true ]; then
-        echo "Reinstalling environment '${ENV_NAME}'..."
-        conda env remove -n "${ENV_NAME}"
-    else
-        echo "Environment '${ENV_NAME}' already exists. Activating it..."
-        eval "$(conda shell.bash hook)"
-        conda activate "${ENV_NAME}"
-    fi
+# Activate venv
+source $VENV_DIR/bin/activate
+
+# Upgrade pip
+echo "  [*] Upgrading pip..."
+pip install --upgrade pip setuptools wheel -q
+
+# Install dependencies
+echo "  [*] Installing dependencies (this may take a few minutes)..."
+pip install -r requirements.txt --no-cache-dir -q
+
+# Install iopaint separately (no deps to avoid conflicts)
+echo "  [*] Installing iopaint..."
+pip install iopaint --no-deps --no-cache-dir -q
+echo "  [OK] Dependencies installed"
+
+# Download LaMA model
+echo "  [*] Downloading LaMA model (~196MB)..."
+python -m iopaint download --model lama || echo "  [!] LaMA download failed, will retry on first use"
+
+# Download Florence-2 model
+echo "  [*] Downloading Florence-2 model (~1.5GB)..."
+python -c "from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)" || echo "  [!] Florence-2 download failed, will retry on first use"
+
+echo ""
+echo "  ============================================="
+echo "     Setup complete!"
+echo "  ============================================="
+echo ""
+echo "  To run the app:"
+echo "    source venv/bin/activate"
+echo "    python remwmgui.py"
+echo ""
+echo "  Or for CLI:"
+echo "    source venv/bin/activate"
+echo "    python remwm.py input.png output/"
+echo ""
+
+# Ask to launch
+read -p "  Launch now? (y/n) " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Yy]$ ]]; then
+    echo "  Starting WatermarkRemover-AI..."
+    python remwmgui.py
 fi
-
-if ! conda env list | grep -q "^${ENV_NAME}\\s"; then
-    # Create the Conda environment
-    echo "Creating Conda environment '${ENV_NAME}' from '${ENV_FILE}'..."
-    conda env create -f "${ENV_FILE}" || {
-        echo "Failed to create the Conda environment."
-        exit 1
-    }
-    eval "$(conda shell.bash hook)"
-    conda activate "${ENV_NAME}"
-fi
-
-if [ "$ACTIVATE_ONLY" = true ]; then
-    echo "Environment '${ENV_NAME}' activated. To deactivate, run 'conda deactivate'."
-    exit 0
-fi
-
-# Ensure required dependencies are installed
-pip list | grep -q PyQt6 || pip install PyQt6
-pip list | grep -q transformers || pip install transformers
-pip list | grep -q iopaint || pip install iopaint
-pip list | grep -q opencv-python-headless || pip install opencv-python-headless
-
-# Run remwm.py with passed arguments
-python remwm.py "${SCRIPT_ARGS[@]}"

@@ -7,6 +7,15 @@ echo "     WatermarkRemover-AI Setup (Linux/macOS)"
 echo "  ============================================="
 echo ""
 
+# Detect OS
+OS_TYPE="linux"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    OS_TYPE="macos"
+    echo "  [*] Detected macOS"
+else
+    echo "  [*] Detected Linux"
+fi
+
 # Check Python version
 PYTHON_CMD=""
 for cmd in python3.12 python3.11 python3.10 python3 python; do
@@ -45,9 +54,31 @@ source $VENV_DIR/bin/activate
 echo "  [*] Upgrading pip..."
 pip install --upgrade pip setuptools wheel -q
 
-# Install dependencies
-echo "  [*] Installing dependencies (this may take a few minutes)..."
-pip install -r requirements.txt --no-cache-dir -q
+# Install PyTorch based on platform
+echo "  [*] Installing PyTorch..."
+if [ "$OS_TYPE" == "macos" ]; then
+    # macOS: Install from main PyPI (supports MPS on Apple Silicon)
+    pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
+    echo "  [OK] PyTorch installed (MPS support on Apple Silicon)"
+else
+    # Linux: Try CUDA first, fallback to CPU
+    if command -v nvidia-smi &> /dev/null; then
+        echo "  [*] NVIDIA GPU detected, installing CUDA version..."
+        pip install torch>=2.4.0 torchvision>=0.19.0 --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
+        echo "  [OK] PyTorch installed (CUDA 12.4)"
+    else
+        echo "  [*] No NVIDIA GPU detected, installing CPU version..."
+        pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
+        echo "  [OK] PyTorch installed (CPU)"
+    fi
+fi
+
+# Install other dependencies (without torch lines)
+echo "  [*] Installing other dependencies..."
+pip install transformers>=4.50.0 diffusers>=0.30.0 "numpy<2" --no-cache-dir -q
+pip install "opencv-python-headless>=4.8.0,<4.12.0" "Pillow>=10.0.0" --no-cache-dir -q
+pip install pywebview>=4.0 --no-cache-dir -q
+pip install loguru click tqdm psutil pyyaml --no-cache-dir -q
 
 # Install iopaint separately (no deps to avoid conflicts)
 echo "  [*] Installing iopaint..."

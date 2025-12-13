@@ -76,12 +76,70 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
+
+        @keyframes loadingBar {
+            0% { width: 0%; margin-left: 0%; }
+            50% { width: 60%; margin-left: 20%; }
+            100% { width: 0%; margin-left: 100%; }
+        }
+
+        /* Custom Tooltips - Fast & Theme-aware */
+        [data-tooltip] {
+            position: relative;
+        }
+        [data-tooltip]::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            transform: translateY(-4px);
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: normal;
+            line-height: 1.4;
+            width: max-content;
+            max-width: 220px;
+            text-align: left;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+            pointer-events: none;
+            /* Default theme (brainrot) */
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #00ff88;
+            border: 1px solid #00ff88;
+            box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+        [data-tooltip]:hover::after {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Hide empty tooltips */
+        [data-tooltip=""]::after {
+            display: none;
+        }
     </style>
     <!-- Theme styles -->
     <link rel="stylesheet" href="themes.css">
 </head>
 <body class="h-screen w-screen flex crt selection:bg-neon-pink selection:text-white overflow-hidden"
       x-data="brainrotApp()" x-init="init()">
+
+    <!-- LOADING OVERLAY -->
+    <div x-show="isLoading" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 bg-void flex items-center justify-center">
+        <div class="text-center">
+            <div class="text-5xl font-glitch text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-cyan mb-6 animate-pulse">
+                LOADING
+            </div>
+            <div class="w-48 h-1.5 bg-gray-800 rounded-full overflow-hidden mx-auto">
+                <div class="h-full bg-gradient-to-r from-neon-green via-neon-cyan to-neon-pink rounded-full"
+                     style="animation: loadingBar 1.5s ease-in-out infinite"></div>
+            </div>
+        </div>
+    </div>
 
     <!-- BACKGROUND CHAOS -->
     <div class="fixed inset-0 z-0 opacity-30 pointer-events-none">
@@ -103,36 +161,31 @@
                     <h1 class="text-4xl font-glitch text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-cyan leading-none filter drop-shadow-[2px_2px_0px_rgba(255,0,255,0.5)]">
                         WM<br>REMOVER
                     </h1>
-                    <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase">Ohio Edition v6.9</p>
+                    <p class="text-[10px] font-mono text-gray-500 tracking-widest uppercase" x-text="'v' + appVersion"></p>
                 </div>
                 <!-- Theme & Language Selectors -->
                 <div class="flex flex-col gap-1">
-                    <select x-model="theme" @change="switchTheme(theme)" class="bg-black/50 border border-white/20 text-white text-[10px] rounded-lg px-2 py-1 focus:border-neon-pink outline-none font-mono">
-                        <option value="brainrot">Brainrot</option>
-                        <option value="slay">Slay Queen</option>
-                        <option value="sigma">Sigma</option>
-                        <option value="witch">WitchTok</option>
-                        <option value="korpo">Korpo</option>
-                        <option value="coquette">Coquette</option>
-                        <option value="xp">Windows XP</option>
-                        <option value="anime">Anime / Kawaii</option>
+                    <select x-show="availableThemes.length > 0" x-model="theme" @change="switchTheme(theme); saveConfigDebounced()" class="bg-black/50 border border-white/20 text-white text-[10px] rounded-lg px-2 py-1 focus:border-neon-pink outline-none font-mono">
+                        <template x-for="th in availableThemes" :key="th.id">
+                            <option :value="th.id" :selected="th.id === theme" x-text="th.name || th.id"></option>
+                        </template>
                     </select>
-                    <!-- Language selector placeholder (coming soon) -->
-                    <select disabled class="bg-black/30 border border-white/10 text-gray-500 text-[10px] rounded-lg px-2 py-1 outline-none font-mono cursor-not-allowed">
-                        <option>Lang (soon)</option>
+                    <!-- Language selector -->
+                    <select x-show="availableLanguages.length > 0" x-model="lang" @change="switchLang(lang); saveConfigDebounced()" class="bg-black/50 border border-white/20 text-white text-[10px] rounded-lg px-2 py-1 focus:border-neon-cyan outline-none font-mono">
+                        <template x-for="ln in availableLanguages" :key="ln.id">
+                            <option :value="ln.id" :selected="ln.id === lang" x-text="(ln.icon ? ln.icon + ' ' : '') + (ln.name || ln.id)"></option>
+                        </template>
                     </select>
                 </div>
             </div>
 
             <!-- MODE SELECTOR -->
             <div class="space-y-2">
-                <label class="text-xs font-bold text-neon-green uppercase tracking-wider">Select Vibe (Mode)</label>
+                <label class="text-xs font-bold text-neon-green uppercase tracking-wider" x-text="t.modes?.label || 'Mode'"></label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button @click="mode='single'" :class="mode=='single' ? 'bg-neon-green text-black shadow-[0_0_15px_#00ff88]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10">
-                        SOLO
+                    <button @click="mode='single'; saveConfigDebounced()" :data-tooltip="t.modes?.single_tooltip || ''" :class="mode=='single' ? 'bg-neon-green text-black shadow-[0_0_15px_#00ff88]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10" x-text="t.modes?.single || 'Single'">
                     </button>
-                    <button @click="mode='batch'" :class="mode=='batch' ? 'bg-neon-cyan text-black shadow-[0_0_15px_#00f3ff]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10">
-                        SQUAD
+                    <button @click="mode='batch'; saveConfigDebounced()" :data-tooltip="t.modes?.batch_tooltip || ''" :class="mode=='batch' ? 'bg-neon-cyan text-black shadow-[0_0_15px_#00f3ff]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10" x-text="t.modes?.batch || 'Batch'">
                     </button>
                 </div>
             </div>
@@ -142,16 +195,16 @@
 
                 <!-- Toggle -->
                 <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
-                    <span class="text-xs font-bold text-gray-300">Gaslight Files <br><span class="text-[10px] text-gray-500 font-mono">(Overwrite)</span></span>
-                    <button @click="overwrite = !overwrite" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="overwrite ? 'bg-neon-pink' : 'bg-gray-700'">
+                    <span class="text-xs font-bold text-gray-300 cursor-help" :data-tooltip="t.settings?.gaslight?.tooltip || ''"><span x-text="t.settings?.gaslight?.label || 'Overwrite'"></span> <br><span class="text-[10px] text-gray-500 font-mono" x-text="t.settings?.gaslight?.sublabel || ''"></span></span>
+                    <button @click="overwrite = !overwrite; saveConfigDebounced()" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="overwrite ? 'bg-neon-pink' : 'bg-gray-700'">
                         <div class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300" :class="overwrite ? 'left-7' : 'left-1'"></div>
                     </button>
                 </div>
 
                 <!-- Toggle -->
                 <div class="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/5">
-                    <span class="text-xs font-bold text-gray-300">Ghost Mode 👻 <br><span class="text-[10px] text-gray-500 font-mono">(Transparent)</span></span>
-                    <button @click="transparent = !transparent" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="transparent ? 'bg-neon-green' : 'bg-gray-700'">
+                    <span class="text-xs font-bold text-gray-300 cursor-help" :data-tooltip="t.settings?.ghost?.tooltip || ''"><span x-text="t.settings?.ghost?.label || 'Transparent'"></span> <br><span class="text-[10px] text-gray-500 font-mono" x-text="t.settings?.ghost?.sublabel || ''"></span></span>
+                    <button @click="transparent = !transparent; saveConfigDebounced()" class="w-12 h-6 rounded-full relative transition-colors duration-300" :class="transparent ? 'bg-neon-green' : 'bg-gray-700'">
                         <div class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all duration-300" :class="transparent ? 'left-7' : 'left-1'"></div>
                     </button>
                 </div>
@@ -159,17 +212,17 @@
                 <!-- Slider -->
                 <div class="space-y-2 pt-2">
                     <div class="flex justify-between text-xs font-mono">
-                        <span class="text-neon-cyan">Sigma Detect</span>
+                        <span class="text-neon-cyan cursor-help" :data-tooltip="t.settings?.sigma_detect?.tooltip || ''" x-text="t.settings?.sigma_detect?.label || 'Max Size'"></span>
                         <span x-text="detection + '%'">10%</span>
                     </div>
-                    <input type="range" min="1" max="100" x-model="detection" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-neon-cyan">
+                    <input type="range" min="1" max="100" x-model="detection" @change="saveConfigDebounced()" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-neon-cyan">
                 </div>
 
                 <!-- Detection Prompt -->
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase">Detection Prompt</label>
-                    <input type="text" x-model="detectionPrompt" list="prompt-suggestions"
-                           placeholder="watermark"
+                    <label class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.detection_prompt?.tooltip || ''" x-text="t.settings?.detection_prompt?.label || 'Detection Prompt'"></label>
+                    <input type="text" x-model="detectionPrompt" list="prompt-suggestions" @change="saveConfigDebounced()"
+                           :placeholder="t.settings?.detection_prompt?.placeholder || 'watermark'"
                            class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-cyan outline-none font-mono">
                     <datalist id="prompt-suggestions">
                         <option value="watermark">
@@ -185,62 +238,63 @@
 
                 <!-- PREVIEW BUTTON -->
                 <button @click="runPreview()" :disabled="!inputPath || previewLoading"
+                        :data-tooltip="t.buttons?.preview_tooltip || ''"
                         class="w-full py-3 bg-neon-cyan/20 hover:bg-neon-cyan/40 text-neon-cyan border border-neon-cyan/50 rounded-xl font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         :class="previewLoading ? 'animate-pulse' : ''">
-                    <span x-text="previewLoading ? '🔄 Detecting...' : '🔍 Preview Detection'"></span>
+                    <span x-text="previewLoading ? (t.buttons?.preview_loading || '🔄 Detecting...') : (t.buttons?.preview || '🔍 Preview')"></span>
                 </button>
 
                 <!-- Video Settings Section (only for video files) -->
                 <div x-show="isVideoFile(inputPath)" x-transition
                      class="space-y-3 p-3 bg-purple-900/20 rounded-xl border border-purple-500/30">
                     <div class="text-xs font-bold text-purple-400 uppercase flex items-center gap-2">
-                        <span>🎬</span> Video Settings
+                        <span>🎬</span> <span x-text="t.video_settings?.title || 'Video Settings'"></span>
                     </div>
 
                     <!-- Detection Skip Slider -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-mono">
-                            <span class="text-purple-300">Detection Skip</span>
-                            <span x-text="detectionSkip + ' frames'"></span>
+                            <span class="text-purple-300" x-text="t.video_settings?.detection_skip?.label || 'Detection Skip'"></span>
+                            <span x-text="detectionSkip + ' ' + (t.video_settings?.detection_skip?.unit || 'frames')"></span>
                         </div>
-                        <input type="range" min="1" max="10" x-model="detectionSkip"
+                        <input type="range" min="1" max="10" x-model="detectionSkip" @change="saveConfigDebounced()"
                                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                        <div class="text-[9px] text-gray-500">Higher = faster, but may miss short watermarks</div>
+                        <div class="text-[9px] text-gray-500" x-text="t.video_settings?.detection_skip?.hint || ''"></div>
                     </div>
 
                     <!-- Fade In Slider -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-mono">
-                            <span class="text-purple-300">Fade In Buffer</span>
+                            <span class="text-purple-300" x-text="t.video_settings?.fade_in?.label || 'Fade In'"></span>
                             <span x-text="fadeIn + 's'"></span>
                         </div>
-                        <input type="range" min="0" max="2" step="0.1" x-model="fadeIn"
+                        <input type="range" min="0" max="2" step="0.1" x-model="fadeIn" @change="saveConfigDebounced()"
                                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                        <div class="text-[9px] text-gray-500">Extend removal backwards for fade-in watermarks</div>
+                        <div class="text-[9px] text-gray-500" x-text="t.video_settings?.fade_in?.hint || ''"></div>
                     </div>
 
                     <!-- Fade Out Slider -->
                     <div class="space-y-1">
                         <div class="flex justify-between text-xs font-mono">
-                            <span class="text-purple-300">Fade Out Buffer</span>
+                            <span class="text-purple-300" x-text="t.video_settings?.fade_out?.label || 'Fade Out'"></span>
                             <span x-text="fadeOut + 's'"></span>
                         </div>
-                        <input type="range" min="0" max="2" step="0.1" x-model="fadeOut"
+                        <input type="range" min="0" max="2" step="0.1" x-model="fadeOut" @change="saveConfigDebounced()"
                                class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                        <div class="text-[9px] text-gray-500">Extend removal forwards for fade-out watermarks</div>
+                        <div class="text-[9px] text-gray-500" x-text="t.video_settings?.fade_out?.hint || ''"></div>
                     </div>
                 </div>
 
                 <!-- Format Dropdown -->
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase">Output Drip</label>
-                    <select x-model="format" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-green outline-none font-mono">
-                        <option value="None">Auto (Keep Original)</option>
-                        <option value="PNG">PNG (High Qual)</option>
-                        <option value="JPG">JPG (Basic)</option>
-                        <option value="WEBP">WEBP (Fast)</option>
-                        <option value="MP4">MP4 (Video)</option>
-                        <option value="AVI">AVI (Video)</option>
+                    <label class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.output_format?.tooltip || ''" x-text="t.settings?.output_format?.label || 'Output Format'"></label>
+                    <select x-model="format" @change="saveConfigDebounced()" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-green outline-none font-mono">
+                        <option value="None" x-text="t.settings?.output_format?.auto || 'Auto'"></option>
+                        <option value="PNG" x-text="t.settings?.output_format?.png || 'PNG'"></option>
+                        <option value="JPG" x-text="t.settings?.output_format?.jpg || 'JPG'"></option>
+                        <option value="WEBP" x-text="t.settings?.output_format?.webp || 'WEBP'"></option>
+                        <option value="MP4" x-text="t.settings?.output_format?.mp4 || 'MP4'"></option>
+                        <option value="AVI" x-text="t.settings?.output_format?.avi || 'AVI'"></option>
                     </select>
                 </div>
             </div>
@@ -248,8 +302,7 @@
             <!-- START BUTTON -->
             <button @click="startProcessing()" :disabled="processing || !inputPath"
                 class="relative group w-full py-5 bg-neon-green rounded-xl font-black text-black text-xl overflow-hidden hover:scale-[1.02] active:scale-95 transition-transform disabled:opacity-50 disabled:cursor-not-allowed">
-                <span class="relative z-10 flex items-center justify-center gap-2" x-text="processing ? 'COOKING... 👨‍🍳' : 'LET HIM COOK 🔥'">
-                    LET HIM COOK 🔥
+                <span class="relative z-10 flex items-center justify-center gap-2" x-text="processing ? (t.buttons?.start_processing || 'Processing...') : (t.buttons?.start || 'Start')">
                 </span>
                 <!-- Button Glow -->
                 <div class="absolute inset-0 bg-white/30 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
@@ -262,9 +315,7 @@
 
             <!-- MARQUEE BAR -->
             <div class="bg-neon-pink text-black font-bold text-xs py-1 overflow-hidden whitespace-nowrap border-b border-neon-pink">
-                <div class="animate-marquee inline-block">
-                    NO CAP /// JUST REMOVE IT /// SKIBIDI TOILET APPROVED /// DON'T TELL THE TEACHER /// AI IS TAKING OVER /// YOUR WATERMARK IS COOKED ///
-                    NO CAP /// JUST REMOVE IT /// SKIBIDI TOILET APPROVED /// DON'T TELL THE TEACHER /// AI IS TAKING OVER /// YOUR WATERMARK IS COOKED ///
+                <div class="animate-marquee inline-block" x-text="(t.marquee || 'WATERMARK REMOVER AI') + ' ' + (t.marquee || '')">
                 </div>
             </div>
 
@@ -277,15 +328,15 @@
                     <template x-if="!inputPath">
                         <div class="text-center">
                             <div class="text-5xl mb-4 group-hover:animate-bounce">📥</div>
-                            <h3 class="text-xl font-bold text-white group-hover:text-neon-green">Yeet Files Here</h3>
-                            <p class="text-sm text-gray-500 mt-2 font-mono">or click to browse (don't be shy)</p>
+                            <h3 class="text-xl font-bold text-white group-hover:text-neon-green" x-text="t.dropzone?.title || 'Drop Files Here'"></h3>
+                            <p class="text-sm text-gray-500 mt-2 font-mono" x-text="t.dropzone?.subtitle || 'or click to browse'"></p>
                         </div>
                     </template>
                     <template x-if="inputPath">
                         <div class="text-center">
                             <div class="text-5xl mb-4" x-text="isVideoFile(inputPath) ? '🎬' : '✅'"></div>
                             <h3 class="text-lg font-bold text-neon-green break-all px-4" x-text="inputPath"></h3>
-                            <p class="text-sm text-gray-500 mt-2 font-mono" x-text="isVideoFile(inputPath) ? 'video file - click to change' : 'click to change'"></p>
+                            <p class="text-sm text-gray-500 mt-2 font-mono" x-text="isVideoFile(inputPath) ? (t.dropzone?.video_hint || 'video - click to change') : (t.dropzone?.image_hint || 'click to change')"></p>
                         </div>
                     </template>
 
@@ -297,9 +348,9 @@
                 <div class="flex gap-2">
                     <div class="flex-1 min-w-0 bg-card border border-white/10 rounded-xl p-3 flex items-center gap-2">
                         <span class="text-gray-500 flex-shrink-0">📂</span>
-                        <input type="text" x-model="outputPath" placeholder="Output folder..." class="bg-transparent text-sm text-gray-300 w-full outline-none font-mono truncate">
+                        <input type="text" x-model="outputPath" @change="saveConfigDebounced()" :placeholder="t.output?.placeholder || 'Output folder...'" class="bg-transparent text-sm text-gray-300 w-full outline-none font-mono truncate">
                     </div>
-                    <button @click="browseOutput()" class="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white px-3 py-3 rounded-xl border border-white/10 transition-colors text-sm">Browse</button>
+                    <button @click="browseOutput()" class="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white px-3 py-3 rounded-xl border border-white/10 transition-colors text-sm" x-text="t.buttons?.browse || 'Browse'"></button>
                 </div>
 
             </div>
@@ -319,7 +370,7 @@
                             <span x-text="log.msg"></span>
                         </div>
                     </template>
-                    <div x-show="processing" class="text-neon-green animate-pulse">_ cooking_in_progress...</div>
+                    <div x-show="processing" class="text-neon-green animate-pulse" x-text="t.logs?.cooking || '_ processing...'"></div>
                 </div>
             </div>
 
@@ -328,15 +379,15 @@
                 <div class="flex gap-4">
                     <span class="flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full" :class="systemInfo.cuda ? 'bg-neon-green' : 'bg-red-500'"></span>
-                        CUDA: <span x-text="systemInfo.cuda ? 'ON' : 'OFF'"></span>
+                        <span x-text="t.status_bar?.cuda || 'CUDA'"></span>: <span x-text="systemInfo.cuda ? (t.status_bar?.on || 'ON') : (t.status_bar?.off || 'OFF')"></span>
                     </span>
                     <span class="flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full" :class="systemInfo.ffmpeg ? 'bg-neon-green' : 'bg-yellow-500'"></span>
-                        FFMPEG: <span x-text="systemInfo.ffmpeg ? 'ON' : 'OFF'"></span>
+                        <span x-text="t.status_bar?.ffmpeg || 'FFmpeg'"></span>: <span x-text="systemInfo.ffmpeg ? (t.status_bar?.on || 'ON') : (t.status_bar?.off || 'OFF')"></span>
                     </span>
-                    <span>RAM: <span x-text="systemInfo.ram + '%'"></span></span>
+                    <span><span x-text="t.status_bar?.ram || 'RAM'"></span>: <span x-text="systemInfo.ram + '%'"></span></span>
                 </div>
-                <div x-text="systemInfo.gpu || 'CPU MODE'"></div>
+                <div x-text="systemInfo.gpu || (t.status_bar?.cpu_mode || 'CPU Mode')"></div>
             </div>
 
             <!-- PROGRESS OVERLAY (Visible when processing) -->
@@ -358,8 +409,7 @@
 
                 <p class="mt-4 text-neon-cyan font-mono text-lg" x-text="progress + '%'"></p>
 
-                <button @click="stopProcessing()" class="mt-8 px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-full font-bold transition-all uppercase text-xs tracking-widest">
-                    Panic Button (Stop)
+                <button @click="stopProcessing()" class="mt-8 px-6 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded-full font-bold transition-all uppercase text-xs tracking-widest" x-text="t.buttons?.stop || 'Stop'">
                 </button>
             </div>
 
@@ -377,7 +427,7 @@
                 <div class="bg-card border border-white/10 rounded-2xl p-6 max-w-3xl w-full max-h-full overflow-auto shadow-[0_0_50px_rgba(0,243,255,0.2)]">
                     <!-- Header -->
                     <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-black text-neon-cyan">Detection Preview</h2>
+                        <h2 class="text-xl font-black text-neon-cyan" x-text="t.preview_modal?.title || 'Detection Preview'"></h2>
                         <button @click="previewMode = false" class="text-gray-500 hover:text-white text-2xl">&times;</button>
                     </div>
 
@@ -388,16 +438,15 @@
                         </template>
                         <template x-if="!previewImage && previewLoading">
                             <div class="text-center">
-                                <div class="text-gray-500 animate-pulse mb-2">Loading preview...</div>
-                                <div class="text-gray-600 text-xs">(First run may download ~1.5GB model)</div>
+                                <div class="text-gray-500 animate-pulse mb-2" x-text="t.preview_modal?.loading || 'Loading...'"></div>
+                                <div class="text-gray-600 text-xs" x-text="t.preview_modal?.loading_hint || ''"></div>
                             </div>
                         </template>
                         <template x-if="previewError">
                             <div class="p-4 flex flex-col items-center gap-3 max-w-full">
                                 <div class="text-error text-sm break-all max-h-[150px] overflow-y-auto w-full" x-text="previewError"></div>
-                                <button @click="navigator.clipboard.writeText(previewError); $el.textContent = 'Copied!'; setTimeout(() => $el.textContent = '📋 Copy Error', 1500)"
-                                        class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs rounded-lg border border-white/10 transition-colors">
-                                    📋 Copy Error
+                                <button @click="navigator.clipboard.writeText(previewError); $el.textContent = 'Copied!'; setTimeout(() => $el.textContent = t.buttons?.copy_error || '📋 Copy Error', 1500)"
+                                        class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs rounded-lg border border-white/10 transition-colors" x-text="t.buttons?.copy_error || '📋 Copy Error'">
                                 </button>
                             </div>
                         </template>
@@ -406,15 +455,15 @@
                     <!-- Detection Info -->
                     <div class="grid grid-cols-2 gap-4 text-sm font-mono mb-4">
                         <div class="bg-white/5 p-3 rounded-lg">
-                            <span class="text-gray-500">Prompt:</span>
+                            <span class="text-gray-500" x-text="t.preview_modal?.prompt || 'Prompt:'"></span>
                             <span class="text-neon-cyan ml-2" x-text="previewPromptUsed || '-'"></span>
                         </div>
                         <div class="bg-white/5 p-3 rounded-lg">
-                            <span class="text-gray-500">Detected:</span>
-                            <span class="text-neon-green ml-2" x-text="previewDetections.length + ' region(s)'"></span>
+                            <span class="text-gray-500" x-text="t.preview_modal?.detected || 'Detected:'"></span>
+                            <span class="text-neon-green ml-2" x-text="previewDetections.length + ' ' + (t.preview_modal?.regions || 'region(s)')"></span>
                         </div>
                         <div class="bg-white/5 p-3 rounded-lg col-span-2">
-                            <span class="text-gray-500">Source:</span>
+                            <span class="text-gray-500" x-text="t.preview_modal?.source || 'Source:'"></span>
                             <span class="text-white ml-2" x-text="previewSource || '-'"></span>
                         </div>
                     </div>
@@ -422,13 +471,13 @@
                     <!-- Detections List -->
                     <template x-if="previewDetections.length > 0">
                         <div class="space-y-2 mb-4">
-                            <div class="text-xs text-gray-500 uppercase">Bounding Boxes:</div>
+                            <div class="text-xs text-gray-500 uppercase" x-text="t.preview_modal?.bounding_boxes || 'Bounding Boxes:'"></div>
                             <template x-for="(det, idx) in previewDetections" :key="idx">
                                 <div class="flex items-center gap-2 text-xs font-mono bg-white/5 p-2 rounded">
                                     <span class="w-3 h-3 rounded-full" :class="det.accepted ? 'bg-neon-green' : 'bg-error'"></span>
                                     <span class="text-gray-400" x-text="'#' + (idx + 1)"></span>
-                                    <span class="text-white" x-text="det.area_percent + '% of image'"></span>
-                                    <span x-show="!det.accepted" class="text-error">(too large, will skip)</span>
+                                    <span class="text-white" x-text="det.area_percent + (t.preview_modal?.of_image || '% of image')"></span>
+                                    <span x-show="!det.accepted" class="text-error" x-text="t.preview_modal?.too_large || '(too large, skip)'"></span>
                                 </div>
                             </template>
                         </div>
@@ -438,11 +487,11 @@
                     <div class="flex gap-3 justify-end">
                         <button @click="runPreview()" :disabled="previewLoading"
                                 class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-all disabled:opacity-50">
-                            <span x-text="previewLoading ? 'Loading...' : '🔄 Try Again'"></span>
+                            <span x-text="previewLoading ? (t.preview_modal?.loading || 'Loading...') : (t.buttons?.try_again || '🔄 Try Again')"></span>
                         </button>
                         <button @click="previewMode = false"
                                 class="px-4 py-2 bg-neon-cyan text-black rounded-lg font-bold hover:bg-neon-cyan/80 transition-all">
-                            Close
+                            <span x-text="t.buttons?.close || 'Close'"></span>
                         </button>
                     </div>
                 </div>
@@ -453,7 +502,7 @@
 
     <script>
         // Store reference to Alpine app instance for Python callbacks (Alpine 3.x compatible)
-        let appInstance = null;
+        window.appInstance = null;
 
         // Global functions for Python to call - dispatch events for Alpine to catch
         function updateProgress(percent) {
@@ -481,8 +530,25 @@
             }
         }
 
+        // i18n - Load language file
+        async function loadLanguage(lang) {
+            try {
+                const response = await fetch(`lang/${lang}.json`);
+                if (!response.ok) throw new Error('Language file not found');
+                return await response.json();
+            } catch (e) {
+                console.error('Failed to load language:', lang, e);
+                // Fallback to brainrot
+                if (lang !== 'brainrot') {
+                    return await loadLanguage('brainrot');
+                }
+                return null;
+            }
+        }
+
         function brainrotApp() {
             return {
+                isLoading: true, // Show loading screen until config loads
                 mode: 'single',
                 overwrite: false,
                 transparent: false,
@@ -492,12 +558,16 @@
                 outputPath: '',
                 processing: false,
                 progress: 0,
-                statusMsg: 'REMOVING CRINGE...',
-                theme: 'brainrot',
+                statusMsg: '',
+                theme: 'brainrot',  // Default theme for loading screen
+                lang: 'en',
+                t: {}, // translations
+                // Dynamic config loaded from config.json
+                appVersion: '',
+                availableThemes: [],
+                availableLanguages: [],
                 logSeq: Date.now(), // helps keep keys unique across reloads
-                logs: [
-                    {id: 1, time: '00:00:00', msg: 'System initialized. No cap.', color: 'text-gray-400'},
-                ],
+                logs: [],
                 systemInfo: {
                     cuda: false,
                     ram: 0,
@@ -522,21 +592,85 @@
                 fadeIn: 0,
                 fadeOut: 0,
 
-                // Slang messages for status
-                slangMessages: [
-                    "REMOVING CRINGE...",
-                    "RIZZING UP THE PIXELS...",
-                    "FANUM TAX APPLIED...",
-                    "MEWING STREAK ACTIVE...",
-                    "DELETING WATERMARK FR FR...",
-                    "ASKING AI NICELY...",
-                    "COOKING LOGIC...",
-                    "L + RATIO + WATERMARK...",
-                ],
-
+                
                 async init() {
                     // Store reference for global Python callbacks
-                    appInstance = this;
+                    window.appInstance = this;
+
+                    // Load UI config (themes, languages, version) from config.json
+                    try {
+                        const uiConfig = await fetch('config.json').then(r => r.json());
+                        this.appVersion = uiConfig.version || '0.0';
+                        this.availableThemes = uiConfig.themes || [];
+                        this.availableLanguages = uiConfig.languages || [];
+                    } catch (e) {
+                        console.log('Failed to load config.json, using defaults');
+                        this.appVersion = '0.0';
+                        this.availableThemes = [{ id: 'brainrot' }];
+                        this.availableLanguages = [{ id: 'brainrot', randomizable: true }, { id: 'en', randomizable: false }];
+                    }
+
+                    // Helper to pick random from array
+                    const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                    const randomizableThemes = this.availableThemes.map(t => t.id);
+                    const randomizableLangs = this.availableLanguages.filter(l => l.randomizable).map(l => l.id);
+
+                    // Load config when pywebview is ready
+                    const loadConfig = async () => {
+                        if (!window.pywebview?.api) return;
+                        try {
+                            const config = await pywebview.api.get_config() || {};
+                            console.log('Config loaded:', config);
+
+                            // Apply all settings
+                            this.inputPath = config.input_path || '';
+                            this.outputPath = config.output_path || '';
+                            this.overwrite = config.overwrite || false;
+                            this.transparent = config.transparent || false;
+                            this.detection = config.max_bbox_percent || 15;
+                            this.format = config.force_format || 'None';
+                            this.mode = config.mode || 'single';
+                            this.detectionPrompt = config.detection_prompt || 'watermark';
+                            this.detectionSkip = config.detection_skip || 1;
+                            this.fadeIn = config.fade_in || 0;
+                            this.fadeOut = config.fade_out || 0;
+
+                            // Theme & Language (always load, use saved or pick random)
+                            this.theme = config.theme || pickRandom(randomizableThemes);
+                            this.lang = config.lang || pickRandom(randomizableLangs);
+                            switchTheme(this.theme);
+                            await this.switchLang(this.lang);
+
+                            this._configLoaded = true;  // Now allow saving
+                            this.isLoading = false;     // Hide loading screen
+                        } catch (e) {
+                            console.log('Config load failed:', e);
+                            // Still need to load translations with defaults
+                            this.theme = pickRandom(randomizableThemes);
+                            this.lang = pickRandom(randomizableLangs);
+                            switchTheme(this.theme);
+                            await this.switchLang(this.lang);
+                            this.isLoading = false;
+                        }
+                    };
+
+                    // Try loading config now if pywebview ready, otherwise wait for event
+                    if (window.pywebview?.api) {
+                        await loadConfig();
+                    } else {
+                        window.addEventListener('pywebviewready', loadConfig);
+                        // Fallback timeout in case pywebview event never fires
+                        setTimeout(() => {
+                            if (this.isLoading) {
+                                console.log('Pywebview timeout, using random config');
+                                this.theme = pickRandom(randomizableThemes);
+                                this.lang = pickRandom(randomizableLangs);
+                                switchTheme(this.theme);
+                                this.switchLang(this.lang);
+                                this.isLoading = false;
+                            }
+                        }, 3000);
+                    }
 
                     // Listen for pywebview events (guard against duplicate listeners when window reloads)
                     if (window.__pywebviewLogHandler) {
@@ -561,40 +695,32 @@
                     window.__pywebviewCompleteHandler = () => {
                         this.processing = false;
                         this.progress = 100;
-                        this.addLogEntry("DONE. File is clean. Sheesh.", "text-neon-pink font-bold");
+                        this.addLogEntry(this.t.logs?.done || "Done! File processed successfully.", "text-neon-pink font-bold");
                     };
                     window.addEventListener('pywebview-complete', window.__pywebviewCompleteHandler);
-
-                    // Load saved config
-                    if (window.pywebview) {
-                        try {
-                            const config = await pywebview.api.get_config();
-                            if (config) {
-                                this.inputPath = config.input_path || '';
-                                this.outputPath = config.output_path || '';
-                                this.overwrite = config.overwrite || false;
-                                this.transparent = config.transparent || false;
-                                this.detection = config.max_bbox_percent || 15;
-                                this.format = config.force_format || 'None';
-                                this.mode = config.mode || 'single';
-                                this.detectionPrompt = config.detection_prompt || 'watermark';
-                                // Video settings
-                                this.detectionSkip = config.detection_skip || 1;
-                                this.fadeIn = config.fade_in || 0;
-                                this.fadeOut = config.fade_out || 0;
-                                // Theme
-                                this.theme = config.theme || 'brainrot';
-                                switchTheme(this.theme);
-                            }
-                        } catch (e) {
-                            console.log('Config load failed:', e);
-                        }
-                    }
 
                     // Get static info once (CUDA, FFmpeg, GPU)
                     this.loadStaticInfo();
                     // Poll dynamic info (RAM, CPU) every 3 seconds
                     setInterval(() => this.updateDynamicInfo(), 3000);
+                },
+
+                // Auto-save config (debounced)
+                _saveTimeout: null,
+                _configLoaded: false,  // Block saves until config is loaded
+                saveConfigDebounced() {
+                    if (!this._configLoaded) return;  // Don't save until config loaded
+                    clearTimeout(this._saveTimeout);
+                    this._saveTimeout = setTimeout(() => this.saveConfig(), 500);
+                },
+                async saveConfig() {
+                    if (window.pywebview?.api?.save_config) {
+                        try {
+                            await pywebview.api.save_config(this.getConfig());
+                        } catch (e) {
+                            console.log('Config save failed:', e);
+                        }
+                    }
                 },
 
                 async loadStaticInfo() {
@@ -638,7 +764,7 @@
                             : window.pywebview?.api?.browse_folder);
 
                     if (!picker) {
-                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        this.addLogEntry(this.t.logs?.api_error || "API not available. Please run via run.bat/run.sh", "text-error");
                         return;
                     }
 
@@ -649,47 +775,49 @@
 
                     if (path) {
                         this.inputPath = path;
+                        this.saveConfigDebounced();
                     }
                 },
 
                 async browseOutput() {
                     if (!window.pywebview?.api?.browse_folder) {
-                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        this.addLogEntry(this.t.logs?.api_error || "API not available. Please run via run.bat/run.sh", "text-error");
                         return;
                     }
 
                     const path = await pywebview.api.browse_folder();
                     if (path) {
                         this.outputPath = path;
+                        this.saveConfigDebounced();
                     }
                 },
 
                 async startProcessing() {
                     if (!this.inputPath) {
-                        this.addLogEntry("No input selected! Pick a file first.", "text-error");
+                        this.addLogEntry(this.t.logs?.no_input || "No input selected. Please select a file first.", "text-error");
                         return;
                     }
 
                     // Check for video + transparency warning
                     if (this.isVideoFile(this.inputPath) && this.transparent) {
-                        this.addLogEntry("Ghost mode doesn't work with videos. Turning it off.", "text-yellow-400");
+                        this.addLogEntry(this.t.logs?.ghost_video_warning || "Ghost mode doesn't work with videos. Turning it off.", "text-yellow-400");
                         this.transparent = false;
                     }
 
                     // Check for FFmpeg warning
                     if (this.isVideoFile(this.inputPath) && !this.systemInfo.ffmpeg) {
-                        this.addLogEntry("FFmpeg not found! Video will have no audio.", "text-yellow-400");
+                        this.addLogEntry(this.t.logs?.no_ffmpeg || "FFmpeg not found! Video will have no audio.", "text-yellow-400");
                     }
 
                     this.processing = true;
                     this.progress = 0;
-                    this.addLogEntry("Starting process... Hold tight.", "text-white");
-                    this.addLogEntry("(First run may download AI models - be patient!)", "text-gray-500");
+                    this.addLogEntry(this.t.logs?.starting || "Starting process...", "text-white");
+                    this.addLogEntry(this.t.logs?.first_run_hint || "(First run may download AI models)", "text-gray-500");
 
                     // Update status message randomly
                     const statusInterval = setInterval(() => {
-                        if (this.processing) {
-                            this.statusMsg = this.slangMessages[Math.floor(Math.random() * this.slangMessages.length)];
+                        if (this.processing && this.t.processing_status?.length > 0) {
+                            this.statusMsg = this.t.processing_status[Math.floor(Math.random() * this.t.processing_status.length)];
                         } else {
                             clearInterval(statusInterval);
                         }
@@ -709,7 +837,10 @@
                                 // Video settings
                                 detection_skip: parseInt(this.detectionSkip) || 1,
                                 fade_in: parseFloat(this.fadeIn) || 0,
-                                fade_out: parseFloat(this.fadeOut) || 0
+                                fade_out: parseFloat(this.fadeOut) || 0,
+                                // UI settings
+                                theme: this.theme,
+                                lang: this.lang
                             });
 
                             // Check for error response from backend
@@ -725,7 +856,7 @@
                             clearInterval(statusInterval);
                         }
                     } else {
-                        this.addLogEntry("PyWebview API not available! Run via run.bat", "text-error");
+                        this.addLogEntry(this.t.logs?.api_error || "API not available. Please run via run.bat/run.sh", "text-error");
                         this.processing = false;
                         clearInterval(statusInterval);
                     }
@@ -736,7 +867,7 @@
                         await pywebview.api.stop_processing();
                     }
                     this.processing = false;
-                    this.addLogEntry("Process killed by user. Cringe.", "text-error");
+                    this.addLogEntry(this.t.logs?.stopped || "Process stopped by user.", "text-error");
                 },
 
                 addLogEntry(msg, color = 'text-gray-400') {
@@ -766,7 +897,7 @@
                 // Preview detection
                 async runPreview() {
                     if (!this.inputPath) {
-                        this.addLogEntry("Select an input first!", "text-error");
+                        this.addLogEntry(this.t.logs?.no_input || "No input selected. Please select a file first.", "text-error");
                         return;
                     }
 
@@ -788,7 +919,7 @@
                                 this.previewError = result.error;
                                 this.previewImage = null;
                                 this.previewDetections = [];
-                                this.addLogEntry("Preview failed: " + result.error, "text-error");
+                                this.addLogEntry((this.t.logs?.preview_failed || "Preview failed:") + " " + result.error, "text-error");
                             } else {
                                 this.previewImage = result.image;
                                 this.previewDetections = result.detections || [];
@@ -798,15 +929,39 @@
 
                                 const accepted = this.previewDetections.filter(d => d.accepted).length;
                                 const total = this.previewDetections.length;
-                                this.addLogEntry(`Preview: ${total} detected, ${accepted} will be removed`, "text-neon-cyan");
+                                const msg = (this.t.logs?.preview_result || "Detected {total} regions, {accepted} will be removed.")
+                                    .replace('{total}', total)
+                                    .replace('{accepted}', accepted);
+                                this.addLogEntry(msg, "text-neon-cyan");
                             }
                         } catch (e) {
                             this.previewError = "API error: " + e.message;
-                            this.addLogEntry("Preview error: " + e.message, "text-error");
+                            this.addLogEntry((this.t.logs?.preview_failed || "Preview failed:") + " " + e.message, "text-error");
                         }
                     }
 
                     this.previewLoading = false;
+                },
+
+                // Switch language
+                async switchLang(langCode) {
+                    const translations = await loadLanguage(langCode);
+                    if (translations) {
+                        this.t = translations;
+                        this.lang = langCode;
+                        // Update page title
+                        document.title = this.t.app?.title || 'WM Remover';
+                        // Set initial status message
+                        if (this.t.processing_status?.length > 0) {
+                            this.statusMsg = this.t.processing_status[0];
+                        }
+                        // Add init log if logs are empty
+                        if (this.logs.length === 0) {
+                            this.addLogEntry(this.t.logs?.init || 'System initialized.', 'text-gray-400');
+                        }
+                        // Auto-save config
+                        this.saveConfigDebounced();
+                    }
                 },
 
                 // Save config on window close (called from Python)
@@ -824,8 +979,9 @@
                         detection_skip: parseInt(this.detectionSkip) || 1,
                         fade_in: parseFloat(this.fadeIn) || 0,
                         fade_out: parseFloat(this.fadeOut) || 0,
-                        // Theme
-                        theme: this.theme
+                        // Theme & Language
+                        theme: this.theme,
+                        lang: this.lang
                     };
                 }
             }

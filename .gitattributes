@@ -1,0 +1,28 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Shell scripts must have LF endings (Unix/macOS)
+*.sh text eol=lf
+
+# Windows batch/powershell can have CRLF
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Python files - LF preferred
+*.py text eol=lf
+
+# Keep binary files as-is
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mp4 binary
+*.webm binary
+*.mov binary
+*.avi binary
+*.mkv binary
+*.pt binary
+*.pth binary
+*.ckpt binary
+*.safetensors binary

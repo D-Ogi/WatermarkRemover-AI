@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "Watermark Remover AI"
+  },
+  "modes": {
+    "label": "Processing Mode",
+    "single": "Single File",
+    "single_tooltip": "Process one image or video file at a time.",
+    "batch": "Batch (Folder)",
+    "batch_tooltip": "Process all images/videos in a folder at once."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Overwrite Files",
+      "sublabel": "",
+      "tooltip": "Overwrite existing output files instead of skipping them."
+    },
+    "ghost": {
+      "label": "Transparent Mode",
+      "sublabel": "(for LoRA training)",
+      "tooltip": "Make watermark area transparent instead of filling it. Recommended for LoRA training datasets - enable alpha masking in your LoRA trainer. (PNG/WEBP only)"
+    },
+    "sigma_detect": {
+      "label": "Max Detection Size",
+      "tooltip": "Max watermark size as % of image. Detections larger than this will be skipped."
+    },
+    "detection_prompt": {
+      "label": "Detection Prompt",
+      "placeholder": "watermark",
+      "tooltip": "What to detect and remove. Try: watermark, logo, text, signature, etc."
+    },
+    "output_format": {
+      "label": "Output Format",
+      "tooltip": "Choose output file format. Auto keeps the original format.",
+      "auto": "Auto (Keep Original)",
+      "png": "PNG (Lossless)",
+      "jpg": "JPG (Compressed)",
+      "webp": "WEBP (Modern)",
+      "mp4": "MP4 (Video)",
+      "avi": "AVI (Video)"
+    }
+  },
+  "video_settings": {
+    "title": "Video Settings",
+    "detection_skip": {
+      "label": "Detection Skip",
+      "unit": "frames",
+      "hint": "Higher = faster processing, but might miss short watermarks."
+    },
+    "fade_in": {
+      "label": "Fade In Buffer",
+      "hint": "Extend removal backwards in time (for fading in watermarks)."
+    },
+    "fade_out": {
+      "label": "Fade Out Buffer",
+      "hint": "Extend removal forwards in time (for fading out watermarks)."
+    }
+  },
+  "buttons": {
+    "preview": "🔍 Preview Detection",
+    "preview_tooltip": "See what the AI detects before processing. Shows bounding boxes.",
+    "preview_loading": "🔄 Detecting...",
+    "start": "Start Processing",
+    "start_processing": "Processing...",
+    "stop": "Stop",
+    "browse": "Browse",
+    "try_again": "🔄 Try Again",
+    "close": "Close",
+    "copy_error": "📋 Copy Error"
+  },
+  "dropzone": {
+    "title": "Drop Files Here",
+    "subtitle": "or click to browse",
+    "video_hint": "video file - click to change",
+    "image_hint": "click to change"
+  },
+  "output": {
+    "placeholder": "Output folder..."
+  },
+  "status_bar": {
+    "cuda": "CUDA",
+    "ffmpeg": "FFmpeg",
+    "ram": "RAM",
+    "on": "ON",
+    "off": "OFF",
+    "cpu_mode": "CPU Mode"
+  },
+  "preview_modal": {
+    "title": "Detection Preview",
+    "prompt": "Prompt:",
+    "detected": "Detected:",
+    "source": "Source:",
+    "regions": "region(s)",
+    "bounding_boxes": "Bounding Boxes:",
+    "of_image": "% of image",
+    "too_large": "(too large, will skip)",
+    "loading": "Loading preview...",
+    "loading_hint": "(First run may download ~1.5GB model)"
+  },
+  "marquee": "WATERMARK REMOVER AI /// POWERED BY FLORENCE-2 AND LAMA /// REMOVE WATERMARKS WITH AI ///",
+  "processing_status": [
+    "Processing...",
+    "Detecting watermarks...",
+    "Applying inpainting...",
+    "Almost done...",
+    "Removing watermark...",
+    "Running AI model...",
+    "Analyzing image...",
+    "Finishing up..."
+  ],
+  "logs": {
+    "init": "System initialized.",
+    "starting": "Starting process...",
+    "first_run_hint": "(First run may download AI models)",
+    "done": "Done! File processed successfully.",
+    "stopped": "Process stopped by user.",
+    "no_input": "No input selected. Please select a file first.",
+    "ghost_video_warning": "Transparent mode doesn't work with videos. Disabling.",
+    "no_ffmpeg": "FFmpeg not found. Video will have no audio.",
+    "api_error": "API not available. Please run via run.bat/run.sh",
+    "preview_failed": "Preview failed:",
+    "preview_result": "Detected {total} regions, {accepted} will be removed.",
+    "cooking": "Processing..."
+  },
+  "lang": {
+    "label": "Language"
+  }
+}

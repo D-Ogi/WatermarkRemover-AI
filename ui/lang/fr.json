@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "WM REMOVER - LA CITÉ ÉDITION"
+  },
+  "modes": {
+    "label": "Choisis ton bail (Mode)",
+    "single": "Solo (Loup Solitaire)",
+    "single_tooltip": "Gère un seul fichier, tranquille.",
+    "batch": "La Mif (Toute l'équipe)",
+    "batch_tooltip": "Traite tout le dossier d'un coup, c'est carré."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Force le passage",
+      "sublabel": "(Écraser)",
+      "tooltip": "Écrase les fichiers existants sans demander. On s'en fout."
+    },
+    "ghost": {
+      "label": "Mode Pas Vu Pas Pris 👻",
+      "sublabel": "(Transparent)",
+      "tooltip": "Rend la zone transparente. Invisible comme ton père quand faut payer. (PNG/WEBP seulement)"
+    },
+    "sigma_detect": {
+      "label": "Zone de Gros Lard",
+      "tooltip": "Si le watermark prend trop de place (en %), on touche pas. C'est trop risqué frérot."
+    },
+    "detection_prompt": {
+      "label": "C'est quoi la cible ?",
+      "placeholder": "quoicoubeh",
+      "tooltip": "Dis-moi ce que je dois virer. Ex: logo, text, ce truc moche."
+    },
+    "output_format": {
+      "label": "Le Flow de sortie",
+      "tooltip": "Choisis comment ça sort. Auto garde le flow original.",
+      "auto": "Auto (Comme à l'ancienne)",
+      "png": "PNG (Qualité Max)",
+      "jpg": "JPG (Compressé comme le métro)",
+      "webp": "WEBP (Moderne)",
+      "mp4": "MP4 (Vidéo)",
+      "avi": "AVI (Vidéo)"
+    }
+  },
+  "video_settings": {
+    "title": "Réglages du Binks",
+    "detection_skip": {
+      "label": "Skip ça (Flemme)",
+      "unit": "frames",
+      "hint": "Plus haut = plus rapide, mais tu risques de rater des trucs."
+    },
+    "fade_in": {
+      "label": "Dégradé du coiffeur (Début)",
+      "hint": "Étend la suppression vers l'arrière pour les fondus."
+    },
+    "fade_out": {
+      "label": "Dégradé du coiffeur (Fin)",
+      "hint": "Étend la suppression vers l'avant."
+    }
+  },
+  "buttons": {
+    "preview": "Guette le truc 👀",
+    "preview_tooltip": "Vérifie ce que l'IA voit avant de lancer. T'inquiète.",
+    "preview_loading": "J'analyse le terrain...",
+    "start": "ON Y GO (C'EST CARRÉ) 🛵",
+    "start_processing": "Ça cuisine... 👨‍🍳",
+    "stop": "Apagnan ! (Stop) 🛑",
+    "browse": "Chine un truc",
+    "try_again": "Recommence frérot 🔄",
+    "close": "Ferme la porte",
+    "copy_error": "Balance poucave (Copier)"
+  },
+  "dropzone": {
+    "title": "Pose ton bousin ici",
+    "subtitle": "ou clique pour fouiller tes dossiers",
+    "video_hint": "c'est une vidéo le sang",
+    "image_hint": "c'est une image mon gava"
+  },
+  "output": {
+    "placeholder": "Dossier de livraison..."
+  },
+  "status_bar": {
+    "cuda": "MOTEUR (CUDA)",
+    "ffmpeg": "SON (FFMPEG)",
+    "ram": "MÉMOIRE",
+    "on": "ACTIVÉ (CARRÉ)",
+    "off": "ÉTEINT (LA HESS)",
+    "cpu_mode": "MODE CPU (C'EST LENT)"
+  },
+  "preview_modal": {
+    "title": "Vision Nocturne (Preview)",
+    "prompt": "Cible :",
+    "detected": "Cramés :",
+    "source": "Source :",
+    "regions": "zone(s)",
+    "bounding_boxes": "Les Boîtes :",
+    "of_image": "% de l'image",
+    "too_large": "(c'est trop gros wesh, je touche pas)",
+    "loading": "Attends, je mets mes lunettes...",
+    "loading_hint": "(Le premier run télécharge 1.5GB, sois patient le sang)"
+  },
+  "marquee": "C'EST CARRÉ LE SANG /// QUOICOUBEH /// T'AS LES CRAMPTÉS ? /// CHEH LE WATERMARK /// JUL C'EST LE SANG /// ON EST ENSEMBLE /// C'EST UNE DINGUERIE CE LOGICIEL ///",
+  "processing_status": [
+    "Ça charge le bail...",
+    "Je repère les poucaves (watermarks)...",
+    "J'efface les preuves...",
+    "C'est bientôt fini le sang...",
+    "Je nettoie la zone...",
+    "L'IA est en train de cuisiner...",
+    "Analyse du terrain...",
+    "On paufine les détails..."
+  ],
+  "logs": {
+    "init": "Wesh l'équipe, le système est prêt.",
+    "starting": "On démarre le TMAX... Accroche-toi.",
+    "first_run_hint": "(Premier démarrage, je télécharge les muscles - attends un peu)",
+    "done": "C'EST CARRÉ. Le fichier est propre.",
+    "stopped": "Wesh pourquoi tu m'arrêtes ? Cringe.",
+    "no_input": "Wesh t'as rien mis gros ! Tu forces.",
+    "ghost_video_warning": "Le mode Fantôme marche pas sur les vidéos. Je le désactive.",
+    "no_ffmpeg": "Pas de FFmpeg. Ta vidéo aura pas de son (c'est la hess).",
+    "api_error": "L'API est morte. Lance le run.bat frérot.",
+    "preview_failed": "La preview a crashé (Cheh) :",
+    "preview_result": "J'ai vu {total} trucs, j'en vire {accepted}. C'est carré.",
+    "cooking": "_ ca_cuisine_fort..."
+  },
+  "lang": {
+    "label": "Langue (Wesh)"
+  }
+}

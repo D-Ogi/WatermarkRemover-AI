@@ -36,7 +36,7 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 
-CONFIG_FILE = "ui.yml"
+CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui.yml")
 
 
 class Api:
@@ -46,7 +46,13 @@ class Api:
         self.window = None
         self.process = None
         self.is_running = False
+        print(f"[DEBUG] CONFIG_FILE path: {CONFIG_FILE}")
+        print(f"[DEBUG] File exists: {os.path.exists(CONFIG_FILE)}")
+        if os.path.exists(CONFIG_FILE):
+            with open(CONFIG_FILE, 'r') as f:
+                print(f"[DEBUG] Raw file contents:\n{f.read()}")
         self.config = self._load_config()
+        print(f"[DEBUG] Config loaded at startup: {self.config}")
 
     def set_window(self, window):
         """Set the webview window reference"""
@@ -70,8 +76,13 @@ class Api:
         except Exception as e:
             print(f"Failed to save config: {e}")
 
+    def debug_log(self, msg):
+        """Print debug message from JavaScript"""
+        print(f"[JS DEBUG] {msg}")
+
     def get_config(self):
         """Return saved configuration to frontend"""
+        print(f"[DEBUG] get_config called, returning: {self.config}")
         return self.config
 
     def save_config(self, config):
@@ -92,7 +103,7 @@ class Api:
         )
 
         result = self.window.create_file_dialog(
-            webview.OPEN_DIALOG,
+            webview.FileDialog.OPEN,
             file_types=file_types
         )
         return result[0] if result else None
@@ -102,7 +113,7 @@ class Api:
         if not self.window:
             return None
 
-        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        result = self.window.create_file_dialog(webview.FileDialog.FOLDER)
         return result[0] if result else None
 
     def _would_overwrite_input(self, input_path, output_path):
@@ -266,7 +277,9 @@ class Api:
             'detection_prompt': detection_prompt,
             'detection_skip': detection_skip,
             'fade_in': fade_in,
-            'fade_out': fade_out
+            'fade_out': fade_out,
+            'theme': settings.get('theme', 'brainrot'),
+            'lang': settings.get('lang', 'brainrot')
         })
 
         # Build command

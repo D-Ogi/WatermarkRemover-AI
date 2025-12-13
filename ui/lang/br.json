@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "REMOVEDOR PIRATÃO 2025 (CRACKEADO)"
+  },
+  "modes": {
+    "label": "Qual é a fita (Modo)",
+    "single": "X1 (Sozinho)",
+    "single_tooltip": "Resolver o B.O. de um arquivo só, na maciota.",
+    "batch": "Arrastão (Formação de Quadrilha)",
+    "batch_tooltip": "Roubar a marca d'água da pasta inteira. O bonde todo sem freio."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Passar a Perna (Sobrescrever)",
+      "sublabel": "(Sem testemunhas)",
+      "tooltip": "Apaga o original e finge que nada aconteceu. O crime perfeito."
+    },
+    "ghost": {
+      "label": "Modo Pai Ausente",
+      "sublabel": "(Foi comprar cigarro)",
+      "tooltip": "Deixa a área transparente igual teu pai que sumiu há 15 anos. (Só PNG/WEBP)"
+    },
+    "sigma_detect": {
+      "label": "Tamanho da Bitola",
+      "tooltip": "Se for maior que isso, o pai não tanka. Ignora pra não dar ruim."
+    },
+    "detection_prompt": {
+      "label": "O que nós vai roubar?",
+      "placeholder": "marca d'agua",
+      "tooltip": "Fala pro pai o que tem que sumir. Ex: logo, texto, dívida no Serasa."
+    },
+    "output_format": {
+      "label": "Saída (Naipe)",
+      "tooltip": "Escolhe como vai sair o produto do roubo.",
+      "auto": "Original (Roubado)",
+      "png": "PNG (Sem Fundo igual minha conta)",
+      "jpg": "JPG (Qualidade TekPix)",
+      "webp": "WEBP (Leve pra rodar no J2 Prime)",
+      "mp4": "MP4 (Vazou no Zap)",
+      "avi": "AVI (Filme de Camelô)"
+    }
+  },
+  "video_settings": {
+    "title": "Configurações da Câmera de Segurança",
+    "detection_skip": {
+      "label": "Pular Quadros (Preguiça)",
+      "unit": "frames",
+      "hint": "Quanto maior, mais rápido o golpe, mas pode deixar rastro."
+    },
+    "fade_in": {
+      "label": "Margem de Erro (Começo)",
+      "hint": "Começar a apagar antes pra garantir."
+    },
+    "fade_out": {
+      "label": "Margem de Erro (Final)",
+      "hint": "Continuar apagando depois pra não sobrar prova."
+    }
+  },
+  "buttons": {
+    "preview": "👀 Manjar (Só uma olhadinha)",
+    "preview_tooltip": "Vê se vai dar bom antes de cometer o crime.",
+    "preview_loading": "🔄 Calulando o prejuízo...",
+    "start": "LANÇAR A BRABA 🚀",
+    "start_processing": "APLICANDO O GOLPE...",
+    "stop": "SUJOU (VEM A POLÍCIA)",
+    "browse": "Xeretar",
+    "try_again": "🔄 Tenta de novo (O pai é brasileiro)",
+    "close": "Vazar",
+    "copy_error": "📋 Copiar o B.O."
+  },
+  "dropzone": {
+    "title": "Joga a Bomba Aqui",
+    "subtitle": "ou clica pra buscar nos arquivos secretos",
+    "video_hint": "vídeo proibido - clica pra trocar",
+    "image_hint": "imagem amaldiçoada - clica pra trocar"
+  },
+  "output": {
+    "placeholder": "Onde esconder o corpo (pasta)..."
+  },
+  "status_bar": {
+    "cuda": "GAMBIARRA",
+    "ffmpeg": "PIRATARIA",
+    "ram": "MEMÓRIA",
+    "on": "TÁ ON",
+    "off": "DEU RUIM",
+    "cpu_mode": "Modo Batata (CPU)"
+  },
+  "preview_modal": {
+    "title": "Prévia do Crime",
+    "prompt": "Alvo:",
+    "detected": "Achamos:",
+    "source": "Vítima:",
+    "regions": "alvos marcados",
+    "bounding_boxes": "Área do Assalto:",
+    "of_image": "% da tela",
+    "too_large": "(muito grande, o pai não aguenta)",
+    "loading": "Consultando o Serasa...",
+    "loading_hint": "(Primeira vez baixa uns 1.5GB de vírus... confia)"
+  },
+  "marquee": "RECEBA /// O MELHOR DO MUNDO /// TRAVA ZAP /// URUBU DO PIX APROVOU /// LIBERDADE VAI CANTAR /// O PAI TÁ ON E ROTEANDO ///",
+  "processing_status": [
+    "Aplicando o golpe...",
+    "Clonando cartão...",
+    "Dando um perdido na marca d'água...",
+    "Fazendo o Urubu do Pix...",
+    "Rodando no J5 Prime...",
+    "Consultando os universitários...",
+    "Passando o pano...",
+    "Finalizando o esquema..."
+  ],
+  "logs": {
+    "init": "Sistema da Boca iniciado.",
+    "starting": "Começando os trabalhos (ilegais)...",
+    "first_run_hint": "(Baixando a inteligência artificial da Shopee)",
+    "done": "RECEBA! O arquivo tá limpo, pai.",
+    "stopped": "Operação cancelada. A casa caiu.",
+    "no_input": "Cadê o arquivo, vacilão? Escolhe aí.",
+    "ghost_video_warning": "Modo Pai Ausente não funfa em vídeo. Desligando.",
+    "no_ffmpeg": "FFmpeg sumiu (foi roubado). Vídeo vai ficar mudo.",
+    "api_error": "Deu pau na API. Roda pelo .bat, parça.",
+    "preview_failed": "Deu ruim na visão:",
+    "preview_result": "Achei {total} B.Os, vou apagar {accepted} deles.",
+    "cooking": "Fritando o pastel..."
+  },
+  "lang": {
+    "label": "Gíria"
+  }
+}

@@ -7,7 +7,7 @@ diffusers>=0.30.0
 numpy<2
 
 # Image/Video processing
-opencv-python-headless
+opencv-python-headless>=4.8.0,<4.12.0
 Pillow>=10.0.0
 
 # Inpainting core (iopaint installed separately with --no-deps to avoid resolver conflicts)

@@ -139,40 +139,71 @@ if ($iopaintProcess.ExitCode -ne 0) {
 }
 Write-Host "  [OK] iopaint installed" -ForegroundColor Green
 
+# Install iopaint's required dependencies manually (subset needed for LaMA inpainting)
+Write-Host "  [*] Installing iopaint dependencies..." -ForegroundColor Cyan
+$iopaintDepsProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "pydantic", "typer", "einops", "omegaconf", "easydict", "yacs", "--no-cache-dir" -NoNewWindow -PassThru
+$iopaintDepsProcess.WaitForExit()
+
 Write-Host "  [OK] Dependencies installed" -ForegroundColor Green
 
-# Download LaMA model
+# Download LaMA model directly from GitHub (avoids iopaint CLI dependency on fastapi)
 Write-Host ""
 Write-Host "  [*] Downloading AI model (196MB)..." -ForegroundColor Cyan
 Write-Host ""
 Write-Host "      Did you know?" -ForegroundColor DarkGray
 Write-Host ""
 
-$lamaProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "iopaint", "download", "--model", "lama" -NoNewWindow -PassThru
+$lamaDir = Join-Path $env:USERPROFILE ".cache\torch\hub\checkpoints"
+$lamaFile = Join-Path $lamaDir "big-lama.pt"
+$lamaUrl = "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
 
-$lastTipTime = Get-Date
-while (-not $lamaProcess.HasExited) {
-    $now = Get-Date
-    if (($now - $lastTipTime).TotalSeconds -ge 5) {
-        $tip = $tips[$currentTip]
-        $line = "      $($tip.icon) $($tip.text)"
-        $line = $line.PadRight(90)
-        Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
-
-        $currentTip = ($currentTip + 1) % $tips.Count
-        $lastTipTime = $now
+if (-not (Test-Path $lamaFile)) {
+    # Create directory if needed
+    if (-not (Test-Path $lamaDir)) {
+        New-Item -ItemType Directory -Path $lamaDir -Force | Out-Null
     }
-    Start-Sleep -Milliseconds 300
-}
 
-Write-Host "`r                                                                                              "
+    try {
+        # Show tips while downloading
+        $job = Start-Job -ScriptBlock {
+            param($url, $dest)
+            Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
+        } -ArgumentList $lamaUrl, $lamaFile
 
-if ($lamaProcess.ExitCode -ne 0) {
-    Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
-    Write-Host "      You can retry later" -ForegroundColor Yellow
+        $lastTipTime = Get-Date
+        while ($job.State -eq "Running") {
+            $now = Get-Date
+            if (($now - $lastTipTime).TotalSeconds -ge 5) {
+                $tip = $tips[$currentTip]
+                $line = "      $($tip.icon) $($tip.text)"
+                $line = $line.PadRight(90)
+                Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
+
+                $currentTip = ($currentTip + 1) % $tips.Count
+                $lastTipTime = $now
+            }
+            Start-Sleep -Milliseconds 300
+        }
+
+        Write-Host "`r                                                                                              "
+
+        $result = Receive-Job -Job $job
+        Remove-Job -Job $job
+
+        if (Test-Path $lamaFile) {
+            Write-Host "  [OK] LaMA model ready" -ForegroundColor Green
+        } else {
+            Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
+            Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
+        Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
+    }
 }
 else {
-    Write-Host "  [OK] LaMA model ready" -ForegroundColor Green
+    Write-Host "  [OK] LaMA model already exists" -ForegroundColor Green
 }
 
 # Download Florence-2 model for watermark detection

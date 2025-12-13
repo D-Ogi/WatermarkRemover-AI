@@ -2,6 +2,8 @@
 
 **AI-Powered Watermark Removal Tool using Florence-2 and LaMA Models**
 
+🇬🇧 English | 🇫🇷 Français | 🇨🇳 中文 | 🇯🇵 日本語 | 🇧🇷 Português | 🧠 Brainrot
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ---
@@ -34,6 +36,8 @@ https://github.com/user-attachments/assets/505be2a8-8eda-4def-90b6-5a4ceefee456
 - **Preview Mode** - Preview detected watermarks before processing
 - **Fade In/Out Handling** - Extend masks for watermarks that fade in/out
 - **GPU Acceleration** - CUDA support for faster processing
+- **Multi-Language UI** - Available in English, French, Chinese, Japanese, Portuguese, and more
+- **Themes** - Multiple UI themes to choose from
 
 ---
 
@@ -62,11 +66,7 @@ chmod +x setup.sh
 ./setup.sh
 ```
 
-After setup:
-```bash
-source venv/bin/activate
-python remwmgui.py
-```
+After setup, run `./run.sh` to launch the app.
 
 ### Optional: FFmpeg
 
@@ -81,11 +81,14 @@ Install FFmpeg to preserve audio when processing videos:
 
 ### GUI Mode
 
-1. Run the app (`run.bat` on Windows, or `python remwmgui.py`)
-2. Select your mode (Single File or Batch)
-3. Set input and output paths
-4. Configure settings as needed
-5. Hit **LET HIM COOK**
+1. Run the app (`run.bat` on Windows, `./run.sh` on macOS/Linux)
+2. Select your preferred language and theme from the top-right corner
+3. Select your mode (Single File or Batch)
+4. Set input and output paths
+5. Configure settings as needed
+6. Hit **Start Processing**
+
+Your settings are automatically saved and restored on next launch.
 
 ### CLI Mode
 

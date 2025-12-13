@@ -216,6 +216,17 @@ body.theme-sigma input {
     font-family: 'Oswald', sans-serif !important;
 }
 
+/* Inputs and selects */
+body.theme-sigma input[type="text"],
+body.theme-sigma select {
+    background-color: #0b0f19 !important;
+    color: #f7931a !important;
+    border: 1px solid #f7931a !important;
+}
+body.theme-sigma input::placeholder {
+    color: #666 !important;
+}
+
 /* =========================================
    THEME: WITCHTOK (Zodiakara)
    ========================================= */
@@ -254,6 +265,18 @@ body.theme-witch .font-mono,
 body.theme-witch select,
 body.theme-witch input {
     font-family: 'Cinzel', serif !important;
+}
+
+/* Inputs and selects */
+body.theme-witch input[type="text"],
+body.theme-witch select {
+    background-color: rgba(30, 20, 50, 0.8) !important;
+    color: #e6e6fa !important;
+    border: 1px solid #9370db !important;
+}
+body.theme-witch input::placeholder {
+    color: #9370db !important;
+    opacity: 0.6;
 }
 
 /* =========================================
@@ -304,6 +327,18 @@ body.theme-korpo input {
     font-family: 'Arial', sans-serif !important;
 }
 
+/* Inputs and selects */
+body.theme-korpo input[type="text"],
+body.theme-korpo select {
+    background-color: #ffffff !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    border-radius: 4px !important;
+}
+body.theme-korpo input::placeholder {
+    color: #9ca3af !important;
+}
+
 /* =========================================
    THEME: COQUETTE (Sad Girl)
    ========================================= */
@@ -347,6 +382,19 @@ body.theme-coquette .font-mono,
 body.theme-coquette select,
 body.theme-coquette input {
     font-family: 'Playfair Display', serif !important;
+}
+
+/* Inputs and selects */
+body.theme-coquette input[type="text"],
+body.theme-coquette select {
+    background-color: #fff8fa !important;
+    color: #8b4513 !important;
+    border: 1px solid #ffc0cb !important;
+    border-radius: 8px !important;
+}
+body.theme-coquette input::placeholder {
+    color: #d2691e !important;
+    opacity: 0.5;
 }
 
 /* =========================================
@@ -908,4 +956,81 @@ body.theme-anime .bg-black\/50 {
     background-color: rgba(255, 255, 255, 0.5) !important;
     border: 1px solid #ffb7c5 !important;
     color: #ff1493 !important;
+}
+
+/* =========================================
+   THEME-SPECIFIC TOOLTIPS
+   ========================================= */
+
+/* Slay Queen - Glossy pink */
+body.theme-slay [data-tooltip]::after {
+    background: linear-gradient(135deg, #ff1493 0%, #ff69b4 100%) !important;
+    color: white !important;
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    box-shadow: 0 4px 15px rgba(255, 20, 147, 0.5) !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    font-family: 'Inter', sans-serif !important;
+}
+
+/* Sigma - Sharp dark with gold */
+body.theme-sigma [data-tooltip]::after {
+    background: #0b0f19 !important;
+    color: #f7931a !important;
+    border: 1px solid #f7931a !important;
+    box-shadow: 0 2px 10px rgba(247, 147, 26, 0.3) !important;
+    border-radius: 0 !important;
+    font-family: 'Oswald', sans-serif !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* WitchTok - Mystical purple */
+body.theme-witch [data-tooltip]::after {
+    background: linear-gradient(135deg, #1a0b2e 0%, #2f1b4e 100%) !important;
+    color: #e6e6fa !important;
+    border: 1px solid #9370db !important;
+    box-shadow: 0 0 15px rgba(147, 112, 219, 0.4) !important;
+    font-family: 'Cinzel', serif !important;
+}
+
+/* Corporate - Clean professional */
+body.theme-korpo [data-tooltip]::after {
+    background: #ffffff !important;
+    color: #1f2937 !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+    border-radius: 4px !important;
+    font-family: 'Arial', sans-serif !important;
+}
+
+/* Coquette - Soft romantic */
+body.theme-coquette [data-tooltip]::after {
+    background: #fff8fa !important;
+    color: #8b4513 !important;
+    border: 1px solid #ffc0cb !important;
+    box-shadow: 0 3px 10px rgba(255, 182, 193, 0.4) !important;
+    font-family: 'Playfair Display', serif !important;
+}
+
+/* Windows XP - Classic system tooltip */
+body.theme-xp [data-tooltip]::after {
+    background: #ffffe1 !important;
+    color: black !important;
+    border: 1px solid black !important;
+    box-shadow: 1px 1px 0 black !important;
+    border-radius: 0 !important;
+    font-family: 'Tahoma', sans-serif !important;
+    font-size: 11px !important;
+    padding: 4px 6px !important;
+}
+
+/* Anime - Kawaii bubble */
+body.theme-anime [data-tooltip]::after {
+    background: #fff !important;
+    color: #ff69b4 !important;
+    border: 2px solid #ffb7c5 !important;
+    box-shadow: 3px 3px 0 #ffb7c5 !important;
+    border-radius: 15px !important;
+    font-family: 'Mali', cursive !important;
+    font-weight: bold !important;
 }

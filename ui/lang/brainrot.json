@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "WM YEETER - OHIO RIZZ EDITION"
+  },
+  "modes": {
+    "label": "Select Vibe Check",
+    "single": "Main Character",
+    "single_tooltip": "One file at a time. Main character energy only.",
+    "batch": "NPC Horde",
+    "batch_tooltip": "Yeet an entire folder of NPCs at once. Mass ratio."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Gaslight Files",
+      "sublabel": "",
+      "tooltip": "Overwrite existing output files instead of skipping them."
+    },
+    "ghost": {
+      "label": "Ghost Mode 👻",
+      "sublabel": "(LoRA grindset)",
+      "tooltip": "Make watermark go poof (transparent). Sigma move for LoRA training - just enable alpha masking in your trainer. PNG/WEBP only, no cap."
+    },
+    "sigma_detect": {
+      "label": "Sigma Threshold",
+      "tooltip": "Max watermark size as % of image. Detections larger than this will be skipped."
+    },
+    "detection_prompt": {
+      "label": "Rizz Prompt",
+      "placeholder": "what are we cooking?",
+      "tooltip": "What are we hunting? Try: watermark, logo, text, cringe, etc."
+    },
+    "output_format": {
+      "label": "Final Drip",
+      "tooltip": "Pick your output drip. Auto = let him cook the original format.",
+      "auto": "Auto (Let Him Cook)",
+      "png": "PNG (High Rizz)",
+      "jpg": "JPG (Mid)",
+      "webp": "WEBP (Speedrun)",
+      "mp4": "MP4 (Brainrot)",
+      "avi": "AVI (Boomer)"
+    }
+  },
+  "video_settings": {
+    "title": "Skibidi Settings",
+    "detection_skip": {
+      "label": "Lazy Mode (Skip)",
+      "unit": "ticks",
+      "hint": "Higher = faster processing, but might miss short watermarks."
+    },
+    "fade_in": {
+      "label": "Pre-Game Buffer",
+      "hint": "Extend removal backwards in time (for fading in watermarks)."
+    },
+    "fade_out": {
+      "label": "End-Game Buffer",
+      "hint": "Extend removal forwards in time (for fading out watermarks)."
+    }
+  },
+  "buttons": {
+    "preview": "🔍 Vibe Check",
+    "preview_tooltip": "Scout the opps before yeeting. Shows hitboxes on detected targets.",
+    "preview_loading": "🔄 Scouting Ops...",
+    "start": "LET HIM COOK 🗣️🔥",
+    "start_processing": "COOKING... NO CAP 👨‍🍳",
+    "stop": "Rage Quit (Stop) 🛑",
+    "browse": "Find Loot",
+    "try_again": "🔄 Run it Back",
+    "close": "Bye Felicia",
+    "copy_error": "📋 Snitch on Error"
+  },
+  "dropzone": {
+    "title": "Yeet Files Here",
+    "subtitle": "or click to touch grass (files)",
+    "video_hint": "skibidi clip - click to swap",
+    "image_hint": "click to swap rizz"
+  },
+  "output": {
+    "placeholder": "Spawn Point..."
+  },
+  "status_bar": {
+    "cuda": "NVIDIA RIZZ",
+    "ffmpeg": "GLUE ENGINE",
+    "ram": "BRAIN POWER",
+    "on": "W",
+    "off": "L",
+    "cpu_mode": "BROKE BOY MODE (CPU)"
+  },
+  "preview_modal": {
+    "title": "Vibe Check Results",
+    "prompt": "You asked for:",
+    "detected": "Caught in 4K:",
+    "source": "Sauce:",
+    "regions": "opps",
+    "bounding_boxes": "Hitboxes:",
+    "of_image": "% of screen",
+    "too_large": "(Absolute unit, skipping)",
+    "loading": "Edging the preview...",
+    "loading_hint": "(Downloading massive brain model, hold up)"
+  },
+  "marquee": "NO CAP /// SKIBIDI BOP MM DADA /// WATERMARK GONE WRONG /// FANUM TAX EVASION /// GRIMACE SHAKE /// ONLY IN OHIO /// LEVEL 10 GYATT /// RIZZ GOD ///",
+  "processing_status": [
+    "MEWING STREAK ACTIVE...",
+    "APPLYING FANUM TAX...",
+    "DELETING CRINGE...",
+    "SKIBIDI TOILET ATTACK...",
+    "RIZZING UP THE PIXELS...",
+    "EDGING THE WATERMARK...",
+    "COOKING LOGIC...",
+    "L + RATIO + WATERMARK..."
+  ],
+  "logs": {
+    "init": "Server woke up. Sheesh.",
+    "starting": "Locking in. 🗿",
+    "first_run_hint": "(Downloading big brain AI - let him cook)",
+    "done": "W. Watermark got ratioed.",
+    "stopped": "User rage quit. L.",
+    "no_input": "No files? 🥺 Select loot first.",
+    "ghost_video_warning": "Ghost Mode broke the skibidi. Turning it off.",
+    "no_ffmpeg": "No FFmpeg? Audio is cooked (Muted).",
+    "api_error": "API is dead. Skill issue. Run batch file.",
+    "preview_failed": "Vibe check failed:",
+    "preview_result": "Scouted {total} opps, yeeting {accepted}.",
+    "cooking": "_ edging_pixels..."
+  },
+  "lang": {
+    "label": "Dialect"
+  }
+}

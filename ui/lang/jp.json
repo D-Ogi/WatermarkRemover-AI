@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "ロリ刻印剥離くん 👧✨"
+  },
+  "modes": {
+    "label": "紳士の流儀",
+    "single": "ひとりじめ 💕",
+    "single_tooltip": "一人だけを独占...これが真の愛。お巡りさんこっちです。",
+    "batch": "闇の園・一斉召喚 🌙",
+    "batch_tooltip": "複数の生贄を一度に堕とす...これが我が「無限抱擁」の真髄。"
+  },
+  "settings": {
+    "gaslight": {
+      "label": "証拠隠滅",
+      "sublabel": "（何も見てない）",
+      "tooltip": "元ファイル？そんなものは無かった。アリバイは完璧。"
+    },
+    "ghost": {
+      "label": "脱がす 👙→👻",
+      "sublabel": "（着衣が邪魔）",
+      "tooltip": "刻印を透明に...つまり服を脱がすようなもの。LoRA調教用。合法です（震え声）"
+    },
+    "sigma_detect": {
+      "label": "ストライクゾーン 🎯",
+      "tooltip": "大きすぎるのは対象外...僕は小さいのが好きなんだ。"
+    },
+    "detection_prompt": {
+      "label": "ターゲット指定",
+      "placeholder": "JS, JC, JK...",
+      "tooltip": "何を狩る？僕の目は誤魔化せない...ハァハァ。"
+    },
+    "output_format": {
+      "label": "保存形式",
+      "tooltip": "どんな姿で地下室に保管する？",
+      "auto": "おまかせ",
+      "png": "PNG (無修正)",
+      "jpg": "JPG (モザイク)",
+      "webp": "WEBP (薄い本)",
+      "mp4": "MP4 (動画フォルダ)",
+      "avi": "AVI (おじさん)"
+    }
+  },
+  "video_settings": {
+    "title": "動画のお時間 📹",
+    "detection_skip": {
+      "label": "パンチラ検知間隔",
+      "unit": "コマ",
+      "hint": "高速スキップ...でも決定的瞬間を見逃すかも？"
+    },
+    "fade_in": {
+      "label": "前戯",
+      "hint": "焦らしプレイ...ゆっくり始める。"
+    },
+    "fade_out": {
+      "label": "賢者タイム",
+      "hint": "余韻を楽しむ...まだ終わりたくない。"
+    }
+  },
+  "buttons": {
+    "preview": "👁️ 覗き見",
+    "preview_tooltip": "ふふ...ちょっと覗くだけだから。犯罪じゃないよ？",
+    "preview_loading": "👁️ 観察中...ﾊｧﾊｧ",
+    "start": "いただきます！🙏",
+    "start_processing": "ﾍﾟﾛﾍﾟﾛしてる... 👅",
+    "stop": "お巡りさん来た！🚔",
+    "browse": "物色する 👀",
+    "try_again": "🔄 おかわり",
+    "close": "証拠隠滅",
+    "copy_error": "📋 通報用"
+  },
+  "dropzone": {
+    "title": "ここに落として 💝",
+    "subtitle": "僕の地下室へようこそ",
+    "video_hint": "動く...いいね...📹",
+    "image_hint": "静止画...永遠に僕のもの 📸"
+  },
+  "output": {
+    "placeholder": "地下室フォルダ..."
+  },
+  "status_bar": {
+    "cuda": "性能 (CUDA)",
+    "ffmpeg": "編集 (FFmpeg)",
+    "ram": "興奮度",
+    "on": "ﾋﾞﾝﾋﾞﾝ",
+    "off": "萎え",
+    "cpu_mode": "遅漏モード"
+  },
+  "preview_modal": {
+    "title": "品定め 🔍",
+    "prompt": "ターゲット:",
+    "detected": "発見:",
+    "source": "出処:",
+    "regions": "箇所",
+    "bounding_boxes": "拘束エリア:",
+    "of_image": "% の領域",
+    "too_large": "(ババア無理)",
+    "loading": "スカウト中...",
+    "loading_hint": "(初回DL中...我慢できない)"
+  },
+  "marquee": "紳士の嗜み /// 僕は何も悪くない /// ロリは正義 /// 二次元だからセーフ /// お巡りさんこっちです /// 通報しないで ///",
+  "processing_status": [
+    "物色中...",
+    "ターゲット発見...",
+    "近づいている...",
+    "ふふ...いい子だね...",
+    "頭ﾅﾃﾞﾅﾃﾞ...",
+    "ﾍﾟﾛﾍﾟﾛ...",
+    "もうすぐ...",
+    "イク...！"
+  ],
+  "logs": {
+    "init": "紳士モード起動...今日も元気だ 👋",
+    "starting": "狩りの時間だ...ふふ。",
+    "first_run_hint": "(初回はﾀﾞｳﾝﾛｰﾄﾞ中...ﾜｸﾜｸ)",
+    "done": "ごちそうさまでした 🙏✨",
+    "stopped": "なっ...邪魔するな！💢",
+    "no_input": "獲物がいない...寂しい 😢",
+    "ghost_video_warning": "動画は脱がせない...残念。",
+    "no_ffmpeg": "FFmpeg無し...声が聞こえない 🔇",
+    "api_error": "API死亡...run.bat実行しろ 👶",
+    "preview_failed": "スカウト失敗:",
+    "preview_result": "{total}人発見、{accepted}人を確保...ふふふ 🎯",
+    "cooking": "調理中...👨‍🍳"
+  },
+  "lang": {
+    "label": "言語"
+  }
+}

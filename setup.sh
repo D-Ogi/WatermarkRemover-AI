@@ -83,11 +83,23 @@ pip install loguru click tqdm psutil pyyaml --no-cache-dir -q
 # Install iopaint separately (no deps to avoid conflicts)
 echo "  [*] Installing iopaint..."
 pip install iopaint --no-deps --no-cache-dir -q
+
+# Install iopaint's required dependencies manually (subset needed for LaMA inpainting)
+echo "  [*] Installing iopaint dependencies..."
+pip install pydantic typer einops omegaconf easydict yacs --no-cache-dir -q
 echo "  [OK] Dependencies installed"
 
-# Download LaMA model
+# Download LaMA model directly from GitHub (avoids iopaint CLI dependency on fastapi)
 echo "  [*] Downloading LaMA model (~196MB)..."
-python -m iopaint download --model lama || echo "  [!] LaMA download failed, will retry on first use"
+LAMA_DIR="$HOME/.cache/torch/hub/checkpoints"
+LAMA_FILE="$LAMA_DIR/big-lama.pt"
+if [ ! -f "$LAMA_FILE" ]; then
+    mkdir -p "$LAMA_DIR"
+    curl -L -o "$LAMA_FILE" "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt" || echo "  [!] LaMA download failed, will retry on first use"
+    echo "  [OK] LaMA model downloaded"
+else
+    echo "  [OK] LaMA model already exists"
+fi
 
 # Download Florence-2 model
 echo "  [*] Downloading Florence-2 model (~1.5GB)..."

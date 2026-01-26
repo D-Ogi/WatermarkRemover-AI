@@ -155,4 +155,10 @@ Contributions are welcome! Feel free to:
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
+---
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=D-Ogi/WatermarkRemover-AI&type=date&legend=top-left)](https://www.star-history.com/#D-Ogi/WatermarkRemover-AI&type=date&legend=top-left)
+
 

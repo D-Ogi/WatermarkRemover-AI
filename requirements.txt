@@ -21,7 +21,3 @@ click
 tqdm
 psutil
 pyyaml
-
-# qt and gtk gui
-PyGObject
-qtpy

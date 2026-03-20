@@ -83,9 +83,9 @@ echo "  [*] Installing PyTorch..."
 if [ "$OS_TYPE" == "macos" ]; then
     # macOS: Install from main PyPI (supports MPS on Apple Silicon)
     if [ "$CHINA_MODE" == "1" ]; then
-        pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir $PIP_MIRROR -q
+        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir $PIP_MIRROR -q
     else
-        pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
+        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir -q
     fi
     echo "  [OK] PyTorch installed (MPS support on Apple Silicon)"
 else
@@ -93,17 +93,17 @@ else
     if command -v nvidia-smi &> /dev/null; then
         echo "  [*] NVIDIA GPU detected, installing CUDA version..."
         if [ "$CHINA_MODE" == "1" ]; then
-            pip install torch>=2.4.0 torchvision>=0.19.0 --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir $PIP_MIRROR -q
+            pip install "torch>=2.4.0" "torchvision>=0.19.0" --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir $PIP_MIRROR -q
         else
-            pip install torch>=2.4.0 torchvision>=0.19.0 --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
+            pip install "torch>=2.4.0" "torchvision>=0.19.0" --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
         fi
         echo "  [OK] PyTorch installed (CUDA 12.4)"
     else
         echo "  [*] No NVIDIA GPU detected, installing CPU version..."
         if [ "$CHINA_MODE" == "1" ]; then
-            pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir $PIP_MIRROR -q
+            pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir $PIP_MIRROR -q
         else
-            pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
+            pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir -q
         fi
         echo "  [OK] PyTorch installed (CPU)"
     fi
@@ -112,14 +112,16 @@ fi
 # Install other dependencies (without torch lines)
 echo "  [*] Installing other dependencies..."
 if [ "$CHINA_MODE" == "1" ]; then
-    pip install transformers>=4.50.0 diffusers>=0.30.0 "numpy<2" --no-cache-dir $PIP_MIRROR -q
+    pip install "transformers>=4.50.0" "diffusers>=0.30.0" "numpy<2" --no-cache-dir $PIP_MIRROR -q
     pip install "opencv-python-headless>=4.8.0,<4.12.0" "Pillow>=10.0.0" --no-cache-dir $PIP_MIRROR -q
-    pip install pywebview>=4.0 --no-cache-dir $PIP_MIRROR -q
+    pip install "pywebview>=4.0" --no-cache-dir $PIP_MIRROR -q
+    pip install qtpy PySide6 --no-cache-dir $PIP_MIRROR -q
     pip install loguru click tqdm psutil pyyaml --no-cache-dir $PIP_MIRROR -q
 else
-    pip install transformers>=4.50.0 diffusers>=0.30.0 "numpy<2" --no-cache-dir -q
+    pip install "transformers>=4.50.0" "diffusers>=0.30.0" "numpy<2" --no-cache-dir -q
     pip install "opencv-python-headless>=4.8.0,<4.12.0" "Pillow>=10.0.0" --no-cache-dir -q
-    pip install pywebview>=4.0 --no-cache-dir -q
+    pip install "pywebview>=4.0" --no-cache-dir -q
+    pip install qtpy PySide6 --no-cache-dir -q
     pip install loguru click tqdm psutil pyyaml --no-cache-dir -q
 fi
 

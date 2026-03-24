@@ -587,7 +587,15 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         import random
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        florence_model = Florence2ForConditionalGeneration.from_pretrained("florence-community/Florence-2-large").to(device).eval()
+        
+        # Force float32 for CPU compatibility
+        dtype = torch.float32 if device == "cpu" else torch.float16
+
+        florence_model = Florence2ForConditionalGeneration.from_pretrained(
+            "florence-community/Florence-2-large",
+            torch_dtype=dtype,
+            trust_remote_code=True
+            ).to(device).eval()
         florence_processor = AutoProcessor.from_pretrained("florence-community/Florence-2-large")
 
         # Get sample image from input

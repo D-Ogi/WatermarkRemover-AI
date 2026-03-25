@@ -77,7 +77,10 @@ def identify(task_prompt: TaskType, image: MatLike, text_input: str, model: Flor
 
     prompt = task_prompt.value if text_input is None else task_prompt.value + text_input
     inputs = processor(text=prompt, images=image, return_tensors="pt")
-    inputs = {k: v.to(device) for k, v in inputs.items()}
+
+    # Cast tensors to match the model's dtype and move to the correct device
+    inputs = {k: v.to(device).to(model.dtype) if v.is_floating_point() else v.to(device)
+              for k, v in inputs.items()}
 
     generated_ids = model.generate(
         input_ids=inputs["input_ids"],
@@ -587,15 +590,14 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         import random
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        
-        # Force float32 for CPU compatibility
-        dtype = torch.float32 if device == "cpu" else torch.float16
+
+        # Force no dtype for CUDA (intentional default)
+        # Apply float32 for CPU (compatibility)
+        model_dtype = torch.float32 if device == "cpu" else None
 
         florence_model = Florence2ForConditionalGeneration.from_pretrained(
             "florence-community/Florence-2-large",
-            torch_dtype=dtype,
-            trust_remote_code=True
-            ).to(device).eval()
+            torch_dtype=model_dtype).to(device).eval()
         florence_processor = AutoProcessor.from_pretrained("florence-community/Florence-2-large")
 
         # Get sample image from input
@@ -667,13 +669,13 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"Using device: {device}")
 
-    # Force float32 for CPU compatibility
-    dtype = torch.float32 if device == "cpu" else torch.float16
+    # Force no dtype for CUDA (intentional default)
+    # Apply float32 for CPU (compatibility)
+    model_dtype = torch.float32 if device == "cpu" else None
+
     florence_model = Florence2ForConditionalGeneration.from_pretrained(
         "florence-community/Florence-2-large",
-        torch_dtype=dtype,
-        trust_remote_code=True
-        ).to(device).eval()
+        torch_dtype=model_dtype).to(device).eval()
     florence_processor = AutoProcessor.from_pretrained("florence-community/Florence-2-large")
     logger.info("Florence-2 Model loaded")
 

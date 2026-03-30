@@ -26,6 +26,7 @@ import os
 import json
 import yaml
 import base64
+import importlib.util
 from pathlib import Path
 
 # Only psutil for system info (lightweight)
@@ -37,6 +38,29 @@ except ImportError:
 
 
 CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui.yml")
+
+
+def detect_pywebview_backend():
+    """Return the best available pywebview backend and missing requirements."""
+    has_qtpy = importlib.util.find_spec("qtpy") is not None
+    # Prefer PySide6 because it is pip-installable and works well in the venv setup flow.
+    has_qt_binding = any(
+        importlib.util.find_spec(module) is not None
+        for module in ("PySide6", "PyQt6", "PyQt5")
+    )
+    has_gi = importlib.util.find_spec("gi") is not None
+
+    if has_qtpy and has_qt_binding:
+        return "qt", []
+    if has_gi:
+        return "gtk", []
+
+    missing = []
+    if not has_qtpy:
+        missing.append("qtpy")
+    if not has_qt_binding:
+        missing.append("PySide6")
+    return None, missing
 
 
 class Api:
@@ -466,6 +490,19 @@ class Api:
 
 def main():
     """Main entry point"""
+    backend, missing = detect_pywebview_backend()
+    if backend is None:
+        missing_list = ", ".join(missing)
+        print("PyWebView could not find a supported GUI backend.")
+        print(f"Missing Python packages: {missing_list}")
+        print("")
+        print("Fix:")
+        print("  source venv/bin/activate")
+        print("  pip install qtpy PySide6")
+        print("")
+        print("Or rerun ./setup.sh to install the GUI dependencies.")
+        sys.exit(1)
+
     api = Api()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -482,7 +519,7 @@ def main():
     )
 
     api.set_window(window)
-    webview.start()
+    webview.start(gui=backend)
 
 
 if __name__ == '__main__':

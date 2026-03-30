@@ -12,7 +12,7 @@ Pillow>=10.0.0
 
 # Inpainting core (iopaint installed separately with --no-deps to avoid resolver conflicts)
 
-# GUI (PyWebview for brainrot HTML UI)
+# GUI (platform-specific backend is handled by setup scripts)
 pywebview>=4.0
 
 # Utilities
@@ -21,7 +21,3 @@ click
 tqdm
 psutil
 pyyaml
-
-# qt and gtk gui
-PyGObject
-qtpy

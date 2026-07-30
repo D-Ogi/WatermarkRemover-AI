@@ -482,7 +482,22 @@ def main():
     )
 
     api.set_window(window)
-    webview.start()
+
+    # On Windows the default WebView2 backend only wires up the js_api bridge
+    # about half the time: the UI renders but no call ever reaches Python, so
+    # every button is dead. The Qt backend does it reliably, so prefer it.
+    gui = None
+    if sys.platform == 'win32':
+        try:
+            import PySide6  # noqa: F401
+            gui = 'qt'
+        except ImportError:
+            pass
+
+    # Serve the UI over a local HTTP server: pywebview 5+ does not expose the
+    # js_api bridge to pages loaded from file://, and fetch() of the config and
+    # language files is blocked there too.
+    webview.start(http_server=True, gui=gui)
 
 
 if __name__ == '__main__':

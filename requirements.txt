@@ -14,6 +14,9 @@ Pillow>=10.0.0
 
 # GUI (PyWebview for brainrot HTML UI)
 pywebview>=4.0
+# Windows: the default WebView2 backend wires up the js_api bridge only about
+# half the time, so remwmgui.py runs pywebview on its Qt backend instead.
+PySide6; sys_platform == "win32"
 
 # Utilities
 loguru
@@ -23,5 +26,7 @@ psutil
 pyyaml
 
 # qt and gtk gui
-PyGObject
+# PyGObject needs GTK/girepository and Python dev libs, neither of which exist
+# in the embedded Python that setup.ps1 installs, so keep it off Windows.
+PyGObject; sys_platform == "linux"
 qtpy

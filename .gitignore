@@ -58,3 +58,6 @@ huggingface/
 .venv-test/
 .pytest_cache/
 .ruff_cache/
+
+node_modules/
+build-downloads/

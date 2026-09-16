@@ -56,7 +56,7 @@ def _is_valid(path):
         return False
 
 
-def ensure_model(cache_dir=None, *, download=True):
+def ensure_model(cache_dir=None, *, download=True, progress=None):
     """Return verified weights, downloading atomically when allowed.
 
     Downloads use a unique temporary file and a per-artifact cross-process lock.
@@ -65,6 +65,8 @@ def ensure_model(cache_dir=None, *, download=True):
     """
     cache = Path(cache_dir) if cache_dir is not None else default_cache_dir()
     target = cache / MODEL_NAME
+    if progress:
+        progress(dict(status="checking", model="LaMA", current=0, total=MODEL_SIZE))
     if not download:
         if not _is_valid(target):
             raise ModelError(
@@ -76,13 +78,13 @@ def ensure_model(cache_dir=None, *, download=True):
         with FileLock(str(target) + ".lock", timeout=600):
             if _is_valid(target):
                 return target
-            _download(target)
+            _download(target, progress=progress)
     except Timeout as exc:
         raise ModelError("Timed out waiting for another LaMA model download.") from exc
     return target
 
 
-def _download(target):
+def _download(target, progress=None):
     """Publish only a complete verified transfer; retain the old file on failure."""
     temporary = None
     try:
@@ -100,6 +102,8 @@ def _download(target):
                             "LaMA download exceeded its size or time limit."
                         )
                     output.write(chunk)
+                    if progress:
+                        progress(dict(status="downloading", model="LaMA", current=size, total=MODEL_SIZE))
             output.flush()
             os.fsync(output.fileno())
         with temporary.open("rb") as stream:

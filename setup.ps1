@@ -201,13 +201,13 @@ if ($CHINA_MODE) {
 import os
 os.environ['HF_ENDPOINT'] = '$HF_ENDPOINT'
 from huggingface_hub import snapshot_download
-snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)
+from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)
 print('FLORENCE_OK')
 "@
 } else {
     $florenceScript = @"
 from huggingface_hub import snapshot_download
-snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)
+from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)
 print('FLORENCE_OK')
 "@
 }
@@ -235,7 +235,7 @@ Write-Host "`r                                                                  
 $florenceProcess.WaitForExit()
 if ($florenceProcess.ExitCode -ne 0) {
     Write-Host "  [!] Warning: Could not download Florence-2 model" -ForegroundColor Yellow
-    Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
+    Write-Host "      Open Models in the application and choose Download / Retry" -ForegroundColor Yellow
 }
 else {
     Write-Host "  [OK] Florence-2 model ready" -ForegroundColor Green

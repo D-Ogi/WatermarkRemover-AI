@@ -1034,3 +1034,63 @@ body.theme-anime [data-tooltip]::after {
     font-family: 'Mali', cursive !important;
     font-weight: bold !important;
 }
+
+
+/* Model preparation needs readable status text on both light and dark skins. */
+.model-dialog {
+    --model-surface: #111116;
+    --model-ink: #e5e7eb;
+    --model-accent: #67e8f9;
+    --model-on-accent: #111116;
+}
+body.theme-slay .model-dialog {
+    --model-surface: #4a0a38;
+    --model-ink: #ffe4f3;
+    --model-accent: #ffb4df;
+}
+body.theme-sigma .model-dialog { --model-accent: #e2e8f0; }
+body.theme-witch .model-dialog {
+    --model-surface: #1c142a;
+    --model-ink: #ede9fe;
+    --model-accent: #c4b5fd;
+}
+body.theme-korpo .model-dialog {
+    --model-surface: #ffffff;
+    --model-ink: #1f2937;
+    --model-accent: #1d4ed8;
+    --model-on-accent: #ffffff;
+}
+body.theme-coquette .model-dialog {
+    --model-surface: #fff0f5;
+    --model-ink: #5a3e36;
+    --model-accent: #9d174d;
+    --model-on-accent: #ffffff;
+}
+body.theme-xp .model-dialog {
+    --model-surface: #ece9d8;
+    --model-ink: #111111;
+    --model-accent: #003399;
+    --model-on-accent: #ffffff;
+}
+body.theme-anime .model-dialog {
+    --model-surface: #fff5fa;
+    --model-ink: #6b2147;
+    --model-accent: #a31563;
+    --model-on-accent: #ffffff;
+}
+body .glass-panel.model-dialog {
+    background: var(--model-surface) !important;
+    color: var(--model-ink) !important;
+}
+body .glass-panel.model-dialog p { color: var(--model-ink) !important; }
+body .glass-panel.model-dialog h2 { color: var(--model-accent) !important; }
+.model-dialog #download-models {
+    background: var(--model-accent) !important;
+    color: var(--model-on-accent) !important;
+    border: 1px solid var(--model-accent) !important;
+}
+.model-dialog #close-models {
+    background: var(--model-surface) !important;
+    color: var(--model-ink) !important;
+    border: 1px solid var(--model-accent) !important;
+}

@@ -1,5 +1,6 @@
 """Exercise the actual local desktop page, assets, configuration and API bridge."""
 import json
+import logging
 import os
 from pathlib import Path
 import sys
@@ -9,6 +10,7 @@ import time
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from desktop_runtime import configure_runtime
 configure_runtime()
+logging.getLogger().addHandler(logging.StreamHandler())
 import remwmgui
 
 finished = threading.Event()
@@ -19,7 +21,8 @@ def exercise(window, api):
     """Read real Alpine state and execute actions through JavaScript API promises."""
     original_config = dict(api.get_config())
     try:
-        deadline = time.monotonic() + 60
+        assert window.events.loaded.wait(60), "Desktop page did not finish loading"
+        deadline = time.monotonic() + 20
         state = None
         while time.monotonic() < deadline:
             state = window.evaluate_js("""JSON.stringify({
@@ -68,7 +71,9 @@ def watchdog():
 
 
 threading.Thread(target=watchdog, daemon=True).start()
-remwmgui.main(exercise, hidden=True)
+# WebKit can defer network page loading for an entirely hidden native window.
+# Exercise its normal visible startup on the macOS CI desktop.
+remwmgui.main(exercise, hidden=sys.platform != "darwin")
 finished.set()
 if failures:
     raise SystemExit('; '.join(failures))

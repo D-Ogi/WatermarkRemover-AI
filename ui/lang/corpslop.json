@@ -31,7 +31,7 @@
     },
     "output_format": {
       "label": "Takeaway container",
-      "tooltip": "Pick an output format. Auto preserves the original. The packaging is not the product, Karen from Marketing.",
+      "tooltip": "Pick an output format. Auto keeps the image format and uses MP4 for video. Packaging is not the product, Karen from Marketing.",
       "auto": "Auto (Original recipe)",
       "png": "PNG (No added loss)",
       "jpg": "JPG (Budget bucket)",

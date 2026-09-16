@@ -31,7 +31,7 @@
     },
     "output_format": {
       "label": "Release format",
-      "tooltip": "Choose the output format; Auto keeps the original. Repackaging evidence does not refute it.",
+      "tooltip": "Choose the output format. Auto keeps the image format and uses MP4 for video. Repackaging evidence does not refute it.",
       "auto": "Auto (Original format)",
       "png": "PNG (Lossless record)",
       "jpg": "JPG (Compressed record)",

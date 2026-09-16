@@ -349,7 +349,7 @@ body.theme-coquette {
 }
 
 body.theme-coquette .crt::before {
-    background: url('https://www.transparenttextures.com/patterns/lace.png');
+    background: url('assets/lace.svg');
     opacity: 0.1;
 }
 
@@ -402,7 +402,7 @@ body.theme-coquette input::placeholder {
    ========================================= */
 body.theme-xp {
     background-color: #3a6ea5 !important;
-    background-image: url('https://i.imgur.com/Hl4Nppq.jpg') !important;
+    background-image: url('assets/hills.svg') !important;
     background-size: cover;
     background-position: center bottom;
     background-attachment: fixed;
@@ -694,14 +694,14 @@ body.theme-anime {
     background-size: 40px 40px;
     font-family: 'Mali', 'Comic Sans MS', cursive !important;
     color: #ff69b4;
-    cursor: url('https://cur.cursors-4u.net/anime/ani-12/ani1146.gif'), auto !important;
+    cursor: url('assets/star-cursor.svg'), auto !important;
 }
 
 body.theme-anime button,
 body.theme-anime a,
 body.theme-anime select,
 body.theme-anime input {
-    cursor: url('https://cur.cursors-4u.net/anime/ani-12/ani1146.gif'), pointer !important;
+    cursor: url('assets/star-cursor.svg'), pointer !important;
 }
 
 body.theme-anime .crt::before { display: none !important; }

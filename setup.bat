@@ -17,7 +17,7 @@ set PYTHON_EXE=%PYTHON_DIR%\python.exe
 set CHINA_MODE=0
 set PIP_MIRROR=
 set PIP_TRUSTED_HOST=
-set HF_ENDPOINT=
+set HF_ENDPOINT=https://huggingface.co
 
 :: Check if user is in China (for mirror selection)
 echo   [?] Are you in China? (y/n)
@@ -143,13 +143,11 @@ echo.
 echo   [*] Downloading Florence-2 model (~1.5GB)...
 if "%CHINA_MODE%"=="1" (
     echo       Using HF-Mirror for faster download in China
-    "%PYTHON_EXE%" -c "import os; os.environ['HF_ENDPOINT']='%HF_ENDPOINT%'; from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)"
-) else (
-    "%PYTHON_EXE%" -c "from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)"
 )
+"%PYTHON_EXE%" -m model_assets --florence-only --endpoint "%HF_ENDPOINT%"
 if errorlevel 1 (
     echo   [!] Warning: Could not download Florence-2 model
-    echo       It will be downloaded on first use
+    echo       Open Models in the application and choose Download / Retry
 ) else (
     echo   [OK] Florence-2 model ready
 )

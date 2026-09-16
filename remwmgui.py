@@ -5,19 +5,6 @@ PyWebview frontend with brainrot HTML UI
 
 import logging
 
-# Suppress noisy pywebview WebView2 COM warnings (thread safety noise, doesn't affect functionality)
-class PyWebviewFilter(logging.Filter):
-    def filter(self, record):
-        msg = record.getMessage()
-        # Filter out WebView2 COM interface errors that spam the console
-        if 'Error while processing window.native' in msg:
-            return False
-        if 'CoreWebView2 members can only be accessed' in msg:
-            return False
-        return True
-
-logging.getLogger('pywebview').addFilter(PyWebviewFilter())
-
 import webview
 import threading
 import subprocess
@@ -27,6 +14,8 @@ import json
 import yaml
 import base64
 from pathlib import Path
+from desktop_models import ModelPreparation
+from desktop_runtime import APP_ROOT, configure_runtime, data_dir, python_executable, worker_options
 
 # Only psutil for system info (lightweight)
 try:
@@ -36,7 +25,7 @@ except ImportError:
     PSUTIL_AVAILABLE = False
 
 
-CONFIG_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui.yml")
+CONFIG_FILE = str(data_dir() / "ui.yml")
 
 
 class Api:
@@ -45,14 +34,32 @@ class Api:
     def __init__(self):
         self.window = None
         self.process = None
+        self._preview_process = None
+        self._preview_running = False
+        self._closed = False
         self.is_running = False
-        print(f"[DEBUG] CONFIG_FILE path: {CONFIG_FILE}")
-        print(f"[DEBUG] File exists: {os.path.exists(CONFIG_FILE)}")
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r') as f:
-                print(f"[DEBUG] Raw file contents:\n{f.read()}")
+        self._process_lock = threading.Lock()
+        self._stop_requested = threading.Event()
         self.config = self._load_config()
-        print(f"[DEBUG] Config loaded at startup: {self.config}")
+        self._models = ModelPreparation()
+        self._models.start(check=True)
+
+    def get_model_status(self):
+        """Report verified readiness, byte progress, or an actionable download error."""
+        return self._models.status()
+
+    def download_models(self):
+        """Download missing assets or retry a failed transfer using verified caches."""
+        if self.is_running or self._preview_running:
+            return {"error": "Wait until processing or preview finishes"}
+        return self._models.start()
+
+    def _close(self):
+        """Reap only child processes created by this application window."""
+        with self._process_lock:
+            self._closed = True
+        self.stop_processing()
+        self._models.close()
 
     def set_window(self, window):
         """Set the webview window reference"""
@@ -60,10 +67,14 @@ class Api:
 
     def _load_config(self):
         """Load saved configuration from YAML file"""
-        if os.path.exists(CONFIG_FILE):
+        source = Path(CONFIG_FILE)
+        if not source.exists():
+            source = APP_ROOT / "ui.yml"
+        if source.exists():
             try:
-                with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                    return yaml.safe_load(f) or {}
+                with source.open('r', encoding='utf-8') as f:
+                    config = yaml.safe_load(f)
+                    return config if isinstance(config, dict) else {}
             except Exception:
                 pass
         return {}
@@ -71,6 +82,7 @@ class Api:
     def _save_config(self, config):
         """Save configuration to YAML file"""
         try:
+            Path(CONFIG_FILE).parent.mkdir(parents=True, exist_ok=True)
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 yaml.dump(config, f, default_flow_style=False)
         except Exception as e:
@@ -82,7 +94,6 @@ class Api:
 
     def get_config(self):
         """Return saved configuration to frontend"""
-        print(f"[DEBUG] get_config called, returning: {self.config}")
         return self.config
 
     def save_config(self, config):
@@ -190,8 +201,8 @@ class Api:
         # Check CUDA via subprocess (avoid importing torch in GUI)
         try:
             result = subprocess.run(
-                [sys.executable, '-c', 'import torch; print("CUDA:" + str(torch.cuda.is_available()) + ":" + (torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""))'],
-                capture_output=True, text=True, timeout=10, creationflags=creationflags
+                [python_executable(), '-c', 'import torch; print("CUDA:" + str(torch.cuda.is_available()) + ":" + (torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""))'],
+                capture_output=True, text=True, timeout=30, creationflags=creationflags
             )
             if result.returncode == 0 and 'CUDA:' in result.stdout:
                 parts = result.stdout.strip().split(':')
@@ -203,7 +214,7 @@ class Api:
 
         # Check FFmpeg
         try:
-            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True, creationflags=creationflags)
+            subprocess.run(['ffmpeg', '-version'], capture_output=True, check=True, timeout=5, creationflags=creationflags)
             info['ffmpeg'] = True
         except (subprocess.SubprocessError, FileNotFoundError):
             info['ffmpeg'] = False
@@ -231,6 +242,8 @@ class Api:
         if self.is_running:
             return {'error': 'Already running'}
 
+        if self._models.status().get('status') != 'ready':
+            return {'error': 'Prepare the AI models before processing. Open Models and choose Download / Retry.'}
         input_path = settings.get('input', '')
         output_path = settings.get('output', '')
 
@@ -283,7 +296,7 @@ class Api:
         })
 
         # Build command
-        cmd = [sys.executable, 'remwm.py', input_path, output_path]
+        cmd = [python_executable(), str(APP_ROOT / 'remwm.py'), input_path, output_path]
 
         if settings.get('overwrite'):
             cmd.append('--overwrite')
@@ -311,7 +324,13 @@ class Api:
             cmd.append(f'--fade-out={float(fade_out)}')
 
         # Start processing in background thread
-        self.is_running = True
+        with self._process_lock:
+            if self._closed:
+                return {"error": "Window is closing"}
+            if self.is_running or self._preview_running:
+                return {"error": "Processing or preview is already running"}
+            self.is_running = True
+            self._stop_requested.clear()
         threading.Thread(target=self._run_process, args=(cmd,), daemon=True).start()
         return {'status': 'started'}
 
@@ -324,30 +343,30 @@ class Api:
             cli_display = cli_display.replace(' --', ' \\\n    --')
             self._call_js(f'addLog("$ {json.dumps(cli_display)[1:-1]}", "text-neon-cyan")')
 
-            env = os.environ.copy()
-            env['PYTHONUNBUFFERED'] = '1'
 
             working_dir = os.path.dirname(os.path.abspath(__file__))
             script_path = os.path.join(working_dir, 'remwm.py')
 
             # Verify script exists
             if not os.path.exists(script_path):
-                self._call_js(f'addLog("ERROR: remwm.py not found at {json.dumps(script_path)}", "text-error")')
-                self._call_js('processingComplete()')
+                self._call_js(f'addLog({json.dumps("ERROR: remwm.py not found at " + script_path)}, "text-error")')
+                self._call_js('processingComplete({success: false})')
                 return
 
-            self.process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                env=env,
-                cwd=working_dir
-            )
+            with self._process_lock:
+                if self._stop_requested.is_set():
+                    self._call_js('processingComplete({success: false, cancelled: true})')
+                    return
+                self.process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    bufsize=1,
+                    **worker_options(offline=True)
+                )
 
             for line in iter(self.process.stdout.readline, ''):
-                if not self.is_running:
+                if self._stop_requested.is_set():
                     break
 
                 line = line.strip()
@@ -377,8 +396,8 @@ class Api:
 
                 self._call_js(f'addLog({escaped}, "{color}")')
 
-            self.process.wait()
-            self._call_js('processingComplete()')
+            code = self.process.wait()
+            self._call_js(f'processingComplete({json.dumps({"success": code == 0 and not self._stop_requested.is_set(), "cancelled": self._stop_requested.is_set(), "exit_code": code})})')
 
         except Exception as e:
             import traceback
@@ -387,11 +406,14 @@ class Api:
             # Log full traceback for debugging
             tb = json.dumps(traceback.format_exc())
             self._call_js(f'addLog({tb}, "text-gray-500")')
-            self._call_js('processingComplete()')
+            self._call_js('processingComplete({success: false})')
 
         finally:
-            self.is_running = False
-            self.process = None
+            with self._process_lock:
+                if self.process and self.process.stdout:
+                    self.process.stdout.close()
+                self.is_running = False
+                self.process = None
 
     def _call_js(self, js_code):
         """Safely call JavaScript in the frontend"""
@@ -403,69 +425,73 @@ class Api:
 
     def stop_processing(self):
         """Stop the current processing"""
-        self.is_running = False
+        self._stop_requested.set()
+        with self._process_lock:
+            processes = (self.process, self._preview_process)
 
-        if self.process:
+        for process in processes:
+            if process is None:
+                continue
             try:
-                self.process.terminate()
+                process.terminate()
                 try:
-                    self.process.wait(timeout=0.5)
+                    process.wait(timeout=0.5)
                 except subprocess.TimeoutExpired:
-                    self.process.kill()
+                    process.kill()
+                    process.wait(timeout=3)
             except Exception:
                 pass
 
         return {'status': 'stopped'}
 
     def preview_detection(self, settings):
-        """
-        Preview watermark detection via CLI subprocess.
-        Returns image with bounding boxes drawn as base64.
-        """
+        """Run one owned preview worker and return detections or a visible error."""
+        if self._models.status().get('status') != 'ready':
+            return {'error': 'Prepare the AI models before processing. Open Models and choose Download / Retry.'}
         input_path = settings.get('input', '')
-        detection_prompt = settings.get('detection_prompt', 'watermark')
-        max_bbox = settings.get('max_bbox', 15)
-
         if not input_path:
             return {'error': 'No input path specified'}
-
+        with self._process_lock:
+            if self._closed:
+                return {'error': 'Window is closing'}
+            if self.is_running or self._preview_running:
+                return {'error': 'Processing or preview is already running'}
+            self._preview_running = True
+        process = None
         try:
-            # Call CLI with --preview flag
-            cmd = [
-                sys.executable, 'remwm.py',
-                input_path, '--preview',
-                '--max-bbox-percent', str(int(max_bbox)),
-                '--detection-prompt', detection_prompt
-            ]
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=120,
-                cwd=os.path.dirname(os.path.abspath(__file__))
-            )
-
-            if result.returncode != 0:
-                return {'error': result.stderr or 'Preview failed'}
-
-            # Parse JSON output from CLI
-            output = result.stdout.strip()
-            # Find JSON in output (may have log lines before it)
-            for line in output.split('\n'):
+            cmd = [python_executable(), str(APP_ROOT / 'remwm.py'), input_path, '--preview',
+                   '--max-bbox-percent', str(int(settings.get('max_bbox', 15))),
+                   '--detection-prompt', settings.get('detection_prompt', 'watermark')]
+            with self._process_lock:
+                if self._closed:
+                    return {'error': 'Window is closing'}
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                           **worker_options(offline=True))
+                self._preview_process = process
+            output, errors = process.communicate(timeout=120)
+            if process.returncode != 0:
+                return {'error': errors or 'Preview failed or was cancelled'}
+            for line in output.strip().splitlines():
                 if line.startswith('{'):
                     return json.loads(line)
-
             return {'error': 'No preview data returned'}
-
         except subprocess.TimeoutExpired:
             return {'error': 'Preview timed out'}
-        except Exception as e:
-            return {'error': str(e)}
+        except Exception as error:
+            return {'error': str(error)}
+        finally:
+            if process is not None:
+                if process.poll() is None:
+                    process.kill()
+                process.communicate()
+            with self._process_lock:
+                self._preview_process = None
+                self._preview_running = False
 
 
-def main():
+def main(startup=None, *, hidden=False):
     """Main entry point"""
+    configure_runtime()
     api = Api()
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -478,11 +504,14 @@ def main():
         width=950,
         height=860,
         min_size=(800, 600),
-        background_color='#050505'
+        background_color='#050505',
+        hidden=hidden
     )
 
     api.set_window(window)
-    webview.start()
+    window.events.closed += api._close
+    webview.start(startup, args=(window, api) if startup else None,
+                  http_server=True, gui="qt" if sys.platform == "win32" else None)
 
 
 if __name__ == '__main__':

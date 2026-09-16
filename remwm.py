@@ -1,3 +1,4 @@
+from model_assets import ensure_florence
 import sys
 import click
 from pathlib import Path
@@ -550,10 +551,11 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         # Apply float32 for CPU (compatibility)
         model_dtype = torch.float32 if device == "cpu" else None
 
+        florence_path = str(ensure_florence())
         florence_model = Florence2ForConditionalGeneration.from_pretrained(
-            "florence-community/Florence-2-large",
+            florence_path,
             torch_dtype=model_dtype).to(device).eval()
-        florence_processor = AutoProcessor.from_pretrained("florence-community/Florence-2-large")
+        florence_processor = AutoProcessor.from_pretrained(florence_path)
 
         # Get sample image from input
         if input_path.is_dir():
@@ -628,10 +630,11 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
     # Apply float32 for CPU (compatibility)
     model_dtype = torch.float32 if device == "cpu" else None
 
+    florence_path = str(ensure_florence())
     florence_model = Florence2ForConditionalGeneration.from_pretrained(
-        "florence-community/Florence-2-large",
+        florence_path,
         torch_dtype=model_dtype).to(device).eval()
-    florence_processor = AutoProcessor.from_pretrained("florence-community/Florence-2-large")
+    florence_processor = AutoProcessor.from_pretrained(florence_path)
     logger.info("Florence-2 Model loaded")
 
     if not transparent:

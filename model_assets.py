@@ -135,7 +135,9 @@ def main():
         prepare(download=not args.check, progress=emit)
         emit(dict(status="ready", message="Models are verified and ready."))
     except Exception as exc:
-        emit(dict(status="missing" if args.check else "error", message=str(exc)))
+        emit(dict(status="missing" if args.check else "error",
+                  message="Model files are missing or need repair. Choose Download / Retry." if args.check else str(exc),
+                  detail=str(exc)))
         raise SystemExit(1)
 
 

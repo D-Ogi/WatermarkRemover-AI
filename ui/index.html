@@ -13,6 +13,7 @@
 
     <style>
         [x-cloak] { display: none !important; }
+        .model-dialog { color: #e5e7eb; }
         body { background-color: #050505; color: white; }
 
         /* CRT Scanline Effect */
@@ -105,8 +106,8 @@
 
     <!-- BACKGROUND CHAOS -->
     <div class="fixed inset-0 z-0 opacity-30 pointer-events-none">
-        <div class="absolute top-10 left-10 text-9xl animate-pulse text-neon-green">Ä‘Ĺşâ€™â‚¬</div>
-        <div class="absolute bottom-20 right-10 text-8xl animate-bounce text-neon-pink">Ä‘Ĺşâ€ťÄ„</div>
+        <div class="absolute top-10 left-10 text-9xl animate-pulse text-neon-green">💀</div>
+        <div class="absolute bottom-20 right-10 text-8xl animate-bounce text-neon-pink">🔥</div>
         <div class="absolute top-1/2 left-1/4 w-96 h-96 bg-neon-cyan blur-[150px] rounded-full mix-blend-screen opacity-30"></div>
     </div>
 
@@ -203,14 +204,14 @@
                         :data-tooltip="t.buttons?.preview_tooltip || ''"
                         class="w-full py-3 bg-neon-cyan/20 hover:bg-neon-cyan/40 text-neon-cyan border border-neon-cyan/50 rounded-xl font-bold transition-all disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         :class="previewLoading ? 'animate-pulse' : ''">
-                    <span x-text="previewLoading ? (t.buttons?.preview_loading || 'Ä‘Ĺşâ€ťâ€ž Detecting...') : (t.buttons?.preview || 'Ä‘Ĺşâ€ťĹ¤ Preview')"></span>
+                    <span x-text="previewLoading ? (t.buttons?.preview_loading || '🔄 Detecting...') : (t.buttons?.preview || '🔍 Preview')"></span>
                 </button>
 
                 <!-- Video Settings Section (only for video files) -->
                 <div x-show="isVideoFile(inputPath)" x-transition
                      class="space-y-3 p-3 bg-purple-900/20 rounded-xl border border-purple-500/30">
                     <div class="text-xs font-bold text-purple-400 uppercase flex items-center gap-2">
-                        <span>Ä‘ĹşĹ˝Â¬</span> <span x-text="t.video_settings?.title || 'Video Settings'"></span>
+                        <span>🎬</span> <span x-text="t.video_settings?.title || 'Video Settings'"></span>
                     </div>
 
                     <!-- Detection Skip Slider -->
@@ -289,14 +290,14 @@
                      class="border-2 border-dashed border-white/20 rounded-2xl flex-1 flex flex-col items-center justify-center p-8 transition-all hover:border-neon-green hover:bg-neon-green/5 group cursor-pointer relative overflow-hidden">
                     <template x-if="!inputPath">
                         <div class="text-center">
-                            <div class="text-5xl mb-4 group-hover:animate-bounce">Ä‘Ĺşâ€śÄ„</div>
+                            <div class="text-5xl mb-4 group-hover:animate-bounce">📥</div>
                             <h3 class="text-xl font-bold text-white group-hover:text-neon-green" x-text="t.dropzone?.title || 'Drop Files Here'"></h3>
                             <p class="text-sm text-gray-500 mt-2 font-mono" x-text="t.dropzone?.subtitle || 'or click to browse'"></p>
                         </div>
                     </template>
                     <template x-if="inputPath">
                         <div class="text-center">
-                            <div class="text-5xl mb-4" x-text="isVideoFile(inputPath) ? 'Ä‘ĹşĹ˝Â¬' : 'Ă˘Ĺ›â€¦'"></div>
+                            <div class="text-5xl mb-4" x-text="isVideoFile(inputPath) ? '🎬' : '✅'"></div>
                             <h3 class="text-lg font-bold text-neon-green break-all px-4" x-text="inputPath"></h3>
                             <p class="text-sm text-gray-500 mt-2 font-mono" x-text="isVideoFile(inputPath) ? (t.dropzone?.video_hint || 'video - click to change') : (t.dropzone?.image_hint || 'click to change')"></p>
                         </div>
@@ -309,7 +310,7 @@
                 <!-- Output Path Input -->
                 <div class="flex gap-2">
                     <div class="flex-1 min-w-0 bg-card border border-white/10 rounded-xl p-3 flex items-center gap-2">
-                        <span class="text-gray-500 flex-shrink-0">Ä‘Ĺşâ€śâ€š</span>
+                        <span class="text-gray-500 flex-shrink-0">📂</span>
                         <input type="text" x-model="outputPath" @change="saveConfigDebounced()" :placeholder="t.output?.placeholder || 'Output folder...'" class="bg-transparent text-sm text-gray-300 w-full outline-none font-mono truncate">
                     </div>
                     <button @click="browseOutput()" class="flex-shrink-0 bg-white/10 hover:bg-white/20 text-white px-3 py-3 rounded-xl border border-white/10 transition-colors text-sm" x-text="t.buttons?.browse || 'Browse'"></button>
@@ -407,8 +408,8 @@
                         <template x-if="previewError">
                             <div class="p-4 flex flex-col items-center gap-3 max-w-full">
                                 <div class="text-error text-sm break-all max-h-[150px] overflow-y-auto w-full" x-text="previewError"></div>
-                                <button @click="navigator.clipboard.writeText(previewError); $el.textContent = 'Copied!'; setTimeout(() => $el.textContent = t.buttons?.copy_error || 'Ä‘Ĺşâ€śâ€ą Copy Error', 1500)"
-                                        class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs rounded-lg border border-white/10 transition-colors" x-text="t.buttons?.copy_error || 'Ä‘Ĺşâ€śâ€ą Copy Error'">
+                                <button @click="navigator.clipboard.writeText(previewError); $el.textContent = 'Copied!'; setTimeout(() => $el.textContent = t.buttons?.copy_error || '📋 Copy Error', 1500)"
+                                        class="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-gray-300 text-xs rounded-lg border border-white/10 transition-colors" x-text="t.buttons?.copy_error || '📋 Copy Error'">
                                 </button>
                             </div>
                         </template>
@@ -449,7 +450,7 @@
                     <div class="flex gap-3 justify-end">
                         <button @click="runPreview()" :disabled="previewLoading"
                                 class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-all disabled:opacity-50">
-                            <span x-text="previewLoading ? (t.preview_modal?.loading || 'Loading...') : (t.buttons?.try_again || 'Ä‘Ĺşâ€ťâ€ž Try Again')"></span>
+                            <span x-text="previewLoading ? (t.preview_modal?.loading || 'Loading...') : (t.buttons?.try_again || '🔄 Try Again')"></span>
                         </button>
                         <button @click="previewMode = false"
                                 class="px-4 py-2 bg-neon-cyan text-black rounded-lg font-bold hover:bg-neon-cyan/80 transition-all">
@@ -469,14 +470,14 @@
     </div>
     <div x-show="bridgeError" class="fixed top-2 left-2 right-2 z-50 bg-card border border-error p-3 text-sm" x-text="bridgeError"></div>
     <div x-show="modelsOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
-        <section class="glass-panel w-full max-w-xl p-6 rounded-xl" role="dialog" aria-label="AI models">
+        <section class="glass-panel model-dialog w-full max-w-xl p-6 rounded-xl" role="dialog" aria-label="AI models">
             <h2 class="text-xl font-bold text-neon-cyan">AI models</h2>
             <p class="text-sm text-gray-400 mt-3">Download once, then process locally. About 1.8 GB is needed for Florence-2 and LaMA.</p>
-            <p class="mt-4" x-text="[models.model, models.file].filter(Boolean).join(' Ă˘â‚¬â€ť ')"></p>
+            <p class="mt-4" x-text="[models.model, models.file].filter(Boolean).join(' — ')"></p>
             <p class="text-sm mt-2 break-words" x-text="models.message || models.status"></p>
             <div x-show="models.status === 'downloading'" class="mt-4">
                 <progress class="w-full" max="100" :value="modelProgress()"></progress>
-                <p class="text-xs mt-1" x-text="`${modelProgress()}% Ă˘â‚¬â€ť ${(models.current / 1048576).toFixed(1)} / ${(models.total / 1048576).toFixed(1)} MB`"></p>
+                <p class="text-xs mt-1" x-text="`${modelProgress()}% — ${(models.current / 1048576).toFixed(1)} / ${(models.total / 1048576).toFixed(1)} MB`"></p>
             </div>
             <p x-show="models.status === 'error'" class="text-sm text-gray-400 mt-3">Check your connection and free disk space, then retry. Completed files are reused; partial Florence-2 downloads resume when supported.</p>
             <div class="flex gap-3 mt-5">

@@ -43,12 +43,34 @@ def check_sidebar_layout(window):
                     .map(node => {
                         const hint = getComputedStyle(node, '::after');
                         const host = node.getBoundingClientRect();
+                        const hostStyle = getComputedStyle(node);
+                        const width = parseFloat(hint.width) + (hint.boxSizing === 'border-box' ? 0
+                            : parseFloat(hint.paddingLeft) + parseFloat(hint.paddingRight)
+                              + parseFloat(hint.borderLeftWidth) + parseFloat(hint.borderRightWidth));
                         const right = hint.right === 'auto'
-                            ? host.left + parseFloat(hint.left) + parseFloat(hint.width)
-                            : host.right - parseFloat(hint.right);
-                        return right <= bounds.right + 1;
+                            ? host.left + parseFloat(hostStyle.borderLeftWidth) + parseFloat(hint.left) + width
+                            : host.right - parseFloat(hostStyle.borderRightWidth) - parseFloat(hint.right);
+                        return right <= bounds.right + 1 && right - width >= bounds.left - 1;
                     });
+                const panel = document.querySelector('.model-dialog');
+                const luminance = color => {
+                    const rgb = color.match(/[0-9.]+/g).slice(0, 3).map(Number)
+                        .map(value => value / 255)
+                        .map(value => value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4);
+                    return rgb[0] * .2126 + rgb[1] * .7152 + rgb[2] * .0722;
+                };
+                const contrast = (first, second) => {
+                    const a = luminance(first), b = luminance(second);
+                    return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
+                };
+                const background = getComputedStyle(panel).backgroundColor;
+                const textContrast = [...panel.querySelectorAll('h2, p')]
+                    .map(node => contrast(getComputedStyle(node).color, background));
+                const buttonContrast = [...panel.querySelectorAll('button')]
+                    .map(node => { const style = getComputedStyle(node);
+                        return contrast(style.color, style.backgroundColor); });
                 rows.push({theme: theme.id, language: language.id,
+                    contrast: Math.min(...textContrast, ...buttonContrast),
                     client: aside.clientWidth, scroll: aside.scrollWidth,
                     outside, hintsInside: hints.every(Boolean)});
             }
@@ -69,7 +91,9 @@ def check_sidebar_layout(window):
     for row in results:
         assert row['scroll'] <= row['client'] + 1, row
         assert not row['outside'] and row['hintsInside'], row
-    print('SIDEBAR PASS', len(results), 'theme/language combinations', flush=True)
+        assert row['contrast'] >= 4.5, row
+    print('THEME PASS', len(results), 'theme/language combinations; minimum model-panel contrast',
+          round(min(row['contrast'] for row in results), 2), flush=True)
 
 
 def exercise(window, api):

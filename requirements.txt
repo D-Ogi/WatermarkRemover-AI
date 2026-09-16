@@ -13,7 +13,7 @@ Pillow>=10.0.0
 # Inpainting core (iopaint installed separately with --no-deps to avoid resolver conflicts)
 
 # GUI (PyWebview for brainrot HTML UI)
-pywebview>=4.0
+pywebview>=6.2.1
 
 # Utilities
 loguru

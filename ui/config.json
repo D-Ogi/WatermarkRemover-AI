@@ -14,8 +14,10 @@
     { "id": "brainrot", "icon": "🧠", "name": "Brainrot", "randomizable": true },
     { "id": "en", "icon": "🇬🇧", "name": "English", "randomizable": false },
     { "id": "fr", "icon": "🇫🇷", "name": "Français", "randomizable": false },
-    { "id": "zh", "icon": "🇨🇳", "name": "中文", "randomizable": false },
-    { "id": "jp", "icon": "🇯🇵", "name": "厨二病", "randomizable": false },
-    { "id": "br", "icon": "🇧🇷", "name": "Brasileiro", "randomizable": false }
+    { "id": "zh", "icon": "🇨🇳", "name": "中文·反审查", "randomizable": false },
+    { "id": "jp", "icon": "🇯🇵", "name": "限界オタク", "randomizable": false },
+    { "id": "br", "icon": "🇧🇷", "name": "Brasileiro", "randomizable": false },
+    { "id": "corpslop", "icon": "🍔", "name": "CorpSlop", "randomizable": false },
+    { "id": "en_il", "icon": "🎙️", "name": "English (Israeli PR)", "randomizable": false }
   ]
 }

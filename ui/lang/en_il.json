@@ -1,0 +1,129 @@
+{
+  "app": {
+    "title": "Watermark Remover — Spokesperson Edition"
+  },
+  "modes": {
+    "label": "Choose the briefing",
+    "single": "One-file briefing",
+    "single_tooltip": "Process one image or video. The press release has already declared it a success; the software will still check.",
+    "batch": "Batch briefing",
+    "batch_tooltip": "Process a folder. More files do not make the spokesperson more credible."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Revise the record",
+      "sublabel": "(overwrite outputs)",
+      "tooltip": "Overwrite existing output files instead of skipping them. The old press statement has become inconvenient."
+    },
+    "ghost": {
+      "label": "Radical transparency",
+      "sublabel": "(PNG/WEBP / LoRA)",
+      "tooltip": "Make detected watermark regions transparent instead of filling them. PNG/WEBP only; enable alpha masking for LoRA training. Actual transparency. The briefing room is horrified."
+    },
+    "sigma_detect": {
+      "label": "Maximum region (%)",
+      "tooltip": "Skip detections larger than this share of the image. Calling something precise does not change its size."
+    },
+    "detection_prompt": {
+      "label": "The official target",
+      "placeholder": "watermark",
+      "tooltip": "Specify watermark, logo, text or signature. The detector needs a description, not a national-security monologue."
+    },
+    "output_format": {
+      "label": "Release format",
+      "tooltip": "Choose the output format. Auto keeps the image format and uses MP4 for video. Repackaging evidence does not refute it.",
+      "auto": "Auto (Original format)",
+      "png": "PNG (Lossless record)",
+      "jpg": "JPG (Compressed record)",
+      "webp": "WEBP (New briefing)",
+      "mp4": "MP4 (Video record)",
+      "avi": "AVI (Archive footage)"
+    }
+  },
+  "video_settings": {
+    "title": "Footage department",
+    "detection_skip": {
+      "label": "Detection interval",
+      "unit": "frames",
+      "hint": "Higher intervals are faster but may miss brief watermarks. An omission is not an exoneration."
+    },
+    "fade_in": {
+      "label": "Earlier buffer",
+      "hint": "Extend removal backward for fading-in watermarks. Context starts before the convenient clip."
+    },
+    "fade_out": {
+      "label": "Later buffer",
+      "hint": "Extend removal forward for fading-out watermarks. The footage continues after the briefing ends."
+    }
+  },
+  "buttons": {
+    "preview": "🔍 Review the evidence",
+    "preview_tooltip": "Inspect detection boxes before processing. “Facts don’t care about your feelings.” — Ben Shapiro. Great; let’s look at the actual pixels.",
+    "preview_loading": "🔄 Reviewing the record…",
+    "start": "Process the files",
+    "start_processing": "Processing, actually…",
+    "stop": "End the briefing",
+    "browse": "Browse",
+    "try_again": "🔄 Another statement",
+    "close": "No further questions",
+    "copy_error": "📋 Copy the findings"
+  },
+  "dropzone": {
+    "title": "Original files, please",
+    "subtitle": "Drop files or click. A press statement is not an image.",
+    "video_hint": "Video evidence. Click to change the input.",
+    "image_hint": "Source image. Click to change the input."
+  },
+  "output": {
+    "placeholder": "Output folder / press office…"
+  },
+  "status_bar": {
+    "cuda": "Hardware (CUDA)",
+    "ffmpeg": "Audio record",
+    "ram": "Working memory",
+    "on": "AVAILABLE",
+    "off": "UNAVAILABLE",
+    "cpu_mode": "CPU, no spin"
+  },
+  "preview_modal": {
+    "title": "Independent pixel review",
+    "prompt": "Detection prompt:",
+    "detected": "Detected:",
+    "source": "Source file:",
+    "regions": "regions",
+    "bounding_boxes": "Actual detection boxes:",
+    "of_image": "% of image",
+    "too_large": "(over the limit; skipped)",
+    "loading": "Reading the actual file…",
+    "loading_hint": "Loading prepared models. Prepare missing downloads in the Models panel."
+  },
+  "marquee": "MOST MORAL PIXELS IN THE WORLD™ /// WE INVESTIGATED OUR OWN PRESS RELEASE /// ACCOUNTABILITY IS NOT A FILE FORMAT /// FACTS REQUIRE MORE THAN A PODCAST MICROPHONE ///",
+  "processing_status": [
+    "Checking the pixels against the press release…",
+    "The spokesperson is deeply concerned about being asked…",
+    "An internal review has congratulated the internal review…",
+    "“I’m popular and no one has ever heard of you.” — Ben Shapiro, to Andrew Neil. The GPU remains unimpressed…",
+    "Precision is a measurement, not a fucking slogan…",
+    "A civilian is a person, not a PR inconvenience. Processing pixels…",
+    "The evidence has declined an invitation to disappear…",
+    "Repairing the background, not the official alibi…",
+    "Almost done. The briefing still has no answers."
+  ],
+  "logs": {
+    "init": "Spokesperson mode. Political satire, actual file processing.",
+    "starting": "Processing started. No victory statement until the worker succeeds.",
+    "first_run_hint": "Missing models must be prepared in the Models panel. Rhetoric will not download them.",
+    "done": "Files processed successfully. A verifiable result; the press office is confused.",
+    "stopped": "The user stopped processing. No euphemism required.",
+    "no_input": "No input selected. Even a confident spokesperson needs a file.",
+    "ghost_video_warning": "Transparent mode is unavailable for video; disabling it. This is a technical limitation, not a classified justification.",
+    "no_ffmpeg": "FFmpeg is missing. Output video will have no audio. That is a dependency issue, not proof the source was silent.",
+    "api_error": "API unavailable. Start the app or run.bat/run.sh. Denouncing the question will not fix the bridge.",
+    "preview_failed": "Preview failed:",
+    "preview_result": "Detected {total} regions; {accepted} are scheduled for removal.",
+    "cooking": "Processing the files, awaiting evidence…"
+  },
+  "lang": {
+    "label": "Briefing language"
+  }
+}

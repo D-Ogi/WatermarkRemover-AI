@@ -17,6 +17,7 @@ def test_watchdog_leaves_user_configuration_untouched(monkeypatch, tmp_path):
     gui = SimpleNamespace(CONFIG_FILE=str(user_config))
 
     def main(*args, **kwargs):
+        """Write isolated probe state before forcing watchdog termination."""
         probe = Path(gui.CONFIG_FILE)
         temporary_paths.append(probe)
         assert probe != user_config
@@ -24,6 +25,7 @@ def test_watchdog_leaves_user_configuration_untouched(monkeypatch, tmp_path):
         targets[0]()
 
     def exit_check(code):
+        """Expose the forced exit code without ending the test process."""
         raise SystemExit(code)
 
     gui.main = main

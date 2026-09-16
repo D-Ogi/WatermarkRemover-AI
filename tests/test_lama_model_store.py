@@ -40,12 +40,12 @@ def test_download_then_offline_cache_reuse(tmp_path, monkeypatch, artifact):
 
 @pytest.mark.parametrize("bad", [b"", b"truncated", b"x" * 200])
 def test_bad_download_never_published(tmp_path, monkeypatch, artifact, bad):
-    """Reject missing, truncated or oversized transfers without leaving a cache artifact."""
+    """Reject bad transfers without publishing them, while retaining resumable data."""
     monkeypatch.setattr(store, "urlopen", lambda *a, **k: io.BytesIO(bad))
     with pytest.raises(store.ModelError):
         store.ensure_model(tmp_path)
     assert not (tmp_path / store.MODEL_NAME).exists()
-    assert not list(tmp_path.glob("*.part"))
+    assert (tmp_path / f".{store.MODEL_NAME}.part").exists()
 
 
 def test_same_size_tampering_rejected_offline(tmp_path, artifact):
@@ -68,7 +68,7 @@ def test_missing_offline_model_does_not_connect(tmp_path, monkeypatch, artifact)
 
 
 def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact):
-    """Keep the old artifact and remove temporary data after a connection interruption."""
+    """Keep the old artifact and resumable data after a connection interruption."""
     old = tmp_path / store.MODEL_NAME
     old.write_bytes(b"old invalid file")
 
@@ -83,7 +83,26 @@ def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact
     with pytest.raises(store.ModelError, match="interrupted"):
         store.ensure_model(tmp_path)
     assert old.read_bytes() == b"old invalid file"
-    assert not list(tmp_path.glob("*.part"))
+    assert (tmp_path / f".{store.MODEL_NAME}.part").read_bytes() == artifact[:5]
+
+
+def test_interrupted_download_resumes_with_http_range(tmp_path, monkeypatch, artifact):
+    """Resume a retained partial artifact instead of downloading it from zero."""
+    partial = tmp_path / f".{store.MODEL_NAME}.part"
+    partial.write_bytes(artifact[:5])
+
+    class Resumed(io.BytesIO):
+        status = 206
+        headers = {"Content-Range": f"bytes 5-{len(artifact) - 1}/{len(artifact)}"}
+
+    def response(request, timeout):
+        assert request.headers["Range"] == "bytes=5-"
+        return Resumed(artifact[5:])
+
+    monkeypatch.setattr(store, "urlopen", response)
+    target = store.ensure_model(tmp_path)
+    assert target.read_bytes() == artifact
+    assert not partial.exists()
 
 
 def test_corrupt_cache_replaced_only_after_verification(

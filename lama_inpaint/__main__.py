@@ -16,9 +16,18 @@ def main():
         action="store_true",
         help="Verify cached weights without network access",
     )
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Show download progress, resume information and verification details",
+    )
     args = parser.parse_args()
     try:
-        path = ensure_model(args.cache_dir, download=not args.offline)
+        path = ensure_model(
+            args.cache_dir,
+            download=not args.offline,
+            verbose=args.verbose,
+        )
     except (ModelError, OSError) as exc:
         print(f"LaMA model preparation failed: {exc}", file=sys.stderr)
         return 1

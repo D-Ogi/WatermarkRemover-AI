@@ -180,7 +180,7 @@ Write-Host "  [*] Preparing LaMA model (196MB)..." -ForegroundColor Cyan
 if ($CHINA_MODE) {
     Write-Host "      If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks" -ForegroundColor DarkGray
 }
-& $PYTHON_EXE -m lama_inpaint download
+& $PYTHON_EXE -m lama_inpaint download --verbose
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [X] Could not prepare verified LaMA weights. Fix the error above and retry." -ForegroundColor Red
     exit 1

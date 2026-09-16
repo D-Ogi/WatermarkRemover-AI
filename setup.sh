@@ -90,22 +90,14 @@ if [ "$OS_TYPE" == "macos" ]; then
     fi
     echo "  [OK] PyTorch installed (MPS support on Apple Silicon)"
 else
-    # Linux: Try CUDA first, fallback to CPU
+    # Select one wheel index; mixing PyPI/mirrors can silently choose a CPU build.
     if command -v nvidia-smi &> /dev/null; then
         echo "  [*] NVIDIA GPU detected, installing CUDA version..."
-        if [ "$CHINA_MODE" == "1" ]; then
-            pip install "torch>=2.4.0" "torchvision>=0.19.0" --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir $PIP_MIRROR -q
-        else
-            pip install "torch>=2.4.0" "torchvision>=0.19.0" --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
-        fi
+        python -m pip install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
         echo "  [OK] PyTorch installed (CUDA 12.4)"
     else
         echo "  [*] No NVIDIA GPU detected, installing CPU version..."
-        if [ "$CHINA_MODE" == "1" ]; then
-            pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir $PIP_MIRROR -q
-        else
-            pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir -q
-        fi
+        python -m pip install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
         echo "  [OK] PyTorch installed (CPU)"
     fi
 fi
@@ -119,6 +111,9 @@ echo "  [OK] Dependencies installed and verified"
 
 # Shared checksum-verified, atomic download; failure must not look like success.
 echo "  [*] Preparing LaMA model (~196MB)..."
+if [ "$CHINA_MODE" == "1" ]; then
+    echo "      If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks"
+fi
 python -m lama_inpaint download
 
 # Download Florence-2 model

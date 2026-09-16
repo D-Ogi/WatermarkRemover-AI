@@ -130,6 +130,7 @@ if errorlevel 1 (
 
 :: Shared checksum-verified, atomic model download.
 echo   [*] Preparing LaMA model (196MB)...
+if "%CHINA_MODE%"=="1" echo       If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks
 "%PYTHON_EXE%" -m lama_inpaint download
 if errorlevel 1 (
     echo   [X] Could not prepare verified LaMA weights. Fix the error above and retry.

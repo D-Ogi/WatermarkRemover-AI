@@ -5,6 +5,9 @@ IOPaint, its model registry/CLI, diffusion backends, and request schemas are no
 longer needed. Florence-2 detection, desktop themes and translations retain their
 existing behavior.
 
+The current dependency versions and device-selection changes are documented in
+[the scientific runtime migration](dependency-migration.md).
+
 ## Installation and migration
 
 Use a fresh application environment when upgrading an installation that contains
@@ -92,7 +95,7 @@ If GitHub is unavailable, preseed the cache before running setup:
 
 Linux installs CPU and CUDA PyTorch builds from their respective official wheel
 indexes, including when a different mirror is selected for other packages. The
-CUDA branch currently selects CUDA 12.4; this is not a promise of support for every
+CUDA branch currently selects CUDA 12.6; this is not a promise of support for every
 GPU/driver generation. Hardware requiring another build still needs an explicitly
 selected compatible torch/torchvision pair.
 

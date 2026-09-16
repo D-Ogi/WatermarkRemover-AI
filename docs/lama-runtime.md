@@ -70,6 +70,32 @@ do not delete an existing artifact. An invalid cache is replaced only after a ne
 download passes verification. No user-provided URL or checksum environment variable
 can bypass the pinned artifact check.
 
+## Restricted networks
+
+The China option changes the package and Florence-2 mirrors. LaMA still uses the
+pinned GitHub artifact; there is no unverified model mirror or URL override.
+If GitHub is unavailable, preseed the cache before running setup:
+
+1. On a machine with GitHub access and these application packages installed, run
+   `python -m lama_inpaint download --cache-dir model-transfer`.
+2. Transfer `model-transfer/big-lama.pt` to the target machine. Place it at
+   `TORCH_HOME/hub/checkpoints/big-lama.pt` if you set `TORCH_HOME`, otherwise at
+   `~/.cache/torch/hub/checkpoints/big-lama.pt`. If `XDG_CACHE_HOME` is set, use
+   `XDG_CACHE_HOME/torch/hub/checkpoints/big-lama.pt` instead of `~/.cache/...`.
+   Keep the cache environment variables consistent when running setup and the app.
+3. Run setup normally with the chosen package mirror. Every installer checks the
+   local artifact before attempting any model network request. Valid preseeded
+   weights are reused; missing or incorrect weights still cause setup to fail if
+   GitHub cannot be reached. Do not bypass the checksum check.
+4. In the installed application environment, confirm the cache without network
+   access using `python -m lama_inpaint download --offline`.
+
+Linux installs CPU and CUDA PyTorch builds from their respective official wheel
+indexes, including when a different mirror is selected for other packages. The
+CUDA branch currently selects CUDA 12.4; this is not a promise of support for every
+GPU/driver generation. Hardware requiring another build still needs an explicitly
+selected compatible torch/torchvision pair.
+
 ## Processing contract
 
 - Input: nonempty `uint8` RGB array `(H, W, 3)` and matching `uint8` mask `(H, W)`.

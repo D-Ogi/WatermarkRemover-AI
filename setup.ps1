@@ -177,6 +177,9 @@ Write-Host "  [OK] Dependencies installed and verified" -ForegroundColor Green
 
 # All installers use the same checksum-verified, atomic model download.
 Write-Host "  [*] Preparing LaMA model (196MB)..." -ForegroundColor Cyan
+if ($CHINA_MODE) {
+    Write-Host "      If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks" -ForegroundColor DarkGray
+}
 & $PYTHON_EXE -m lama_inpaint download
 if ($LASTEXITCODE -ne 0) {
     Write-Host "  [X] Could not prepare verified LaMA weights. Fix the error above and retry." -ForegroundColor Red

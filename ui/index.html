@@ -46,6 +46,8 @@
             100% { width: 0%; margin-left: 100%; }
         }
 
+        .sidebar-header { flex-wrap: wrap; }
+
         /* Custom Tooltips - Fast & Theme-aware */
         [data-tooltip] {
             position: relative;
@@ -75,6 +77,8 @@
             border: 1px solid #00ff88;
             box-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
         }
+        /* Right-column hints must grow toward the inside of the sidebar. */
+        [data-tooltip-align="end"]::after { left: auto; right: 0; }
         [data-tooltip]:hover::after {
             opacity: 1;
             visibility: visible;
@@ -118,7 +122,7 @@
         <aside class="w-96 flex-shrink-0 bg-black/60 backdrop-blur-md border-r border-white/10 p-4 flex flex-col gap-4 overflow-y-auto">
 
             <!-- HEADER + THEME/LANG SELECTORS -->
-            <div class="flex items-start justify-between gap-2">
+            <div class="sidebar-header flex items-start justify-between gap-2">
                 <!-- Logo -->
                 <div class="space-y-1">
                     <h1 class="text-4xl font-glitch text-transparent bg-clip-text bg-gradient-to-r from-neon-green to-neon-cyan leading-none filter drop-shadow-[2px_2px_0px_rgba(255,0,255,0.5)]">
@@ -148,7 +152,7 @@
                 <div class="grid grid-cols-2 gap-2">
                     <button @click="mode='single'; saveConfigDebounced()" :data-tooltip="t.modes?.single_tooltip || ''" :class="mode=='single' ? 'bg-neon-green text-black shadow-[0_0_15px_#00ff88]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10" x-text="t.modes?.single || 'Single'">
                     </button>
-                    <button @click="mode='batch'; saveConfigDebounced()" :data-tooltip="t.modes?.batch_tooltip || ''" :class="mode=='batch' ? 'bg-neon-cyan text-black shadow-[0_0_15px_#00f3ff]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10" x-text="t.modes?.batch || 'Batch'">
+                    <button data-tooltip-align="end" @click="mode='batch'; saveConfigDebounced()" :data-tooltip="t.modes?.batch_tooltip || ''" :class="mode=='batch' ? 'bg-neon-cyan text-black shadow-[0_0_15px_#00f3ff]' : 'bg-white/5 hover:bg-white/10 text-gray-400'" class="p-3 rounded-xl font-black text-sm transition-all border border-white/10" x-text="t.modes?.batch || 'Batch'">
                     </button>
                 </div>
             </div>

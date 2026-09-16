@@ -29,6 +29,15 @@ The UI, translations, themes and fonts work without internet. Processing uses
 prepared local models. First model preparation requires access to GitHub and
 Hugging Face, or a preseeded cache. See [offline cache instructions](lama-runtime.md).
 The Florence-2 manifest and pinned snapshot revision are in `models/florence.json`.
+Source installers remember the selected Florence mirror for later desktop retries.
+An explicit `HF_ENDPOINT` takes precedence over the saved `model-endpoint.json` in
+the application data directory; only HTTPS base URLs without credentials, query
+strings or fragments are accepted. A mirror never changes the pinned checksums.
+LaMA still uses its separate GitHub source. To persist a different Florence endpoint:
+
+```sh
+python -m model_assets --florence-only --endpoint https://huggingface.co
+```
 
 FFmpeg is still optional and must be available on PATH to preserve video audio.
 The UI reports its availability. The package does not silently install a system
@@ -78,6 +87,12 @@ paths are excluded; use `python.exe -m pip` for intentional package maintenance.
 Never run installation commands into a release candidate after recording its
 validation evidence. Build diagnostics are not a promise of byte-for-byte
 reproducible archives: preserve the emitted package inventory and checksum.
+
+For application-only rebuilds, `--refresh-app` requires matching Python, backend,
+Torch/pip versions and dependency manifests from the previous build. It replaces
+application directories so removed files cannot remain. Runtime changes or old
+build metadata require a fresh output directory. User data and the embedded runtime
+are preserved during an application-only refresh.
 
 CI builds the CPU executable and exercises the actual offline desktop page.
 The Windows portable workflow builds both CPU/CUDA artifacts on a version tag or

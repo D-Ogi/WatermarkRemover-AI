@@ -15,6 +15,9 @@ APP_FILES = ["VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "README.md", "remwm
              "remwmgui.py", "utils.py", "desktop_main.py", "desktop_runtime.py",
              "desktop_models.py", "model_assets.py", "requirements.txt", "requirements-core.txt"]
 APP_DIRS = ["lama_inpaint", "ui", "models", "licenses", "docs"]
+PIP_VERSION = "26.2.1"
+TORCH_VERSION = "2.14.0"
+VISION_VERSION = "0.29.0"
 
 
 def run(*args):
@@ -31,14 +34,42 @@ def sha256(path):
     return digest.hexdigest()
 
 
+def runtime_inputs(backend, runtime):
+    """Identify every declared input used to install the embedded runtime."""
+    return dict(backend=backend, python=runtime, pip=PIP_VERSION,
+                torch=TORCH_VERSION, torchvision=VISION_VERSION,
+                requirements={name: hashlib.sha256((ROOT/name).read_text(encoding="utf-8").encode("utf-8")).hexdigest()
+                              for name in ("requirements.txt", "requirements-core.txt")})
+
+
+def validate_refresh(target, expected):
+    """Reject stale or legacy runtime metadata before changing any packaged file."""
+    marker = target / "build-info.json"
+    existing = json.loads(marker.read_text(encoding="utf-8")) if marker.exists() else {}
+    if (existing.get("runtime_inputs") != expected
+            or existing.get("backend") != expected["backend"]
+            or existing.get("python") != expected["python"]):
+        raise SystemExit("Runtime inputs changed or are missing; create a fresh build instead of --refresh-app")
+
+
 def copy_app(target):
     """Copy an explicit public file list, excluding caches, private settings and models."""
+    target = target.resolve()
+    directories = [target/name for name in [*APP_DIRS, "scripts"]]
+    # Check every absolute deletion target before replacing any application directory.
+    for destination in directories:
+        resolved = destination.resolve()
+        if destination.is_symlink() or resolved == target or not resolved.is_relative_to(target):
+            raise ValueError(f"Application directory escapes the package: {destination.name}")
+    for destination in directories:
+        if destination.exists():
+            shutil.rmtree(destination)
     for name in APP_FILES:
         shutil.copy2(ROOT/name, target/name)
     for name in APP_DIRS:
-        shutil.copytree(ROOT/name, target/name, dirs_exist_ok=True,
+        shutil.copytree(ROOT/name, target/name,
                         ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-    (target/"scripts").mkdir(exist_ok=True)
+    (target/"scripts").mkdir()
     shutil.copy2(ROOT/"scripts/check_desktop.py", target/"scripts/check_desktop.py")
     (target/"portable.flag").write_text("Store settings, logs and model caches in data/.\n")
 
@@ -62,9 +93,7 @@ def main():
     runtime=json.loads((ROOT/"packaging/python-runtime.json").read_text())
     args.cache.mkdir(parents=True,exist_ok=True)
     if args.refresh_app:
-        marker=target/"build-info.json"
-        if not marker.exists() or json.loads(marker.read_text())["backend"] != args.backend:
-            raise SystemExit("Only an existing matching build may be refreshed")
+        validate_refresh(target, runtime_inputs(args.backend, runtime))
     else:
         target.mkdir(parents=True,exist_ok=False)
         archive=args.cache/Path(runtime["url"]).name
@@ -83,8 +112,8 @@ def main():
         (python_dir/f"python{major_minor}._pth").write_text(f"python{major_minor}.zip\n.\n..\nLib/site-packages\nimport site\n")
         (python_dir/"Lib/site-packages").mkdir(parents=True)
         executable=python_dir/"python.exe"
-        run(sys.executable,"-m","pip","--python",executable,"install","pip==26.2.1")
-        run(executable,"-m","pip","--isolated","install","torch==2.14.0","torchvision==0.29.0",
+        run(sys.executable,"-m","pip","--python",executable,"install",f"pip=={PIP_VERSION}")
+        run(executable,"-m","pip","--isolated","install",f"torch=={TORCH_VERSION}",f"torchvision=={VISION_VERSION}",
             "--index-url",f"https://download.pytorch.org/whl/{args.backend}")
         run(executable,"-m","pip","--isolated","install","-r",ROOT/"requirements.txt")
     copy_app(target)
@@ -101,7 +130,7 @@ def main():
     (target/"installed-packages.txt").write_text(freeze,encoding="utf-8")
     commit=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
     (target/"build-info.json").write_text(json.dumps(dict(version=version,backend=args.backend,
-        python=runtime,source_commit=commit,
+        python=runtime,runtime_inputs=runtime_inputs(args.backend, runtime),source_commit=commit,
         source_dirty=bool(subprocess.check_output(["git","diff","--ignore-space-at-eol","HEAD"],cwd=ROOT))),indent=2)+"\n")
     if not args.skip_archive:
         bundle=args.output.resolve()/(name+".zip")

@@ -6,13 +6,59 @@ import json
 import os
 from pathlib import Path
 import time
+import tempfile
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from filelock import FileLock
 
+from desktop_runtime import data_dir
+
 MANIFEST = json.loads((Path(__file__).parent / "models/florence.json").read_text())
 FLORENCE_REPO = MANIFEST["repo"]
 FLORENCE_REVISION = MANIFEST["revision"]
+
+
+def validate_endpoint(value):
+    """Accept HTTPS base URLs without credentials, query strings or fragments."""
+    parsed = urlsplit(value)
+    if (parsed.scheme != "https" or not parsed.hostname or parsed.username is not None
+            or parsed.password is not None or parsed.query or parsed.fragment
+            or any(character.isspace() for character in value) or "\\" in value):
+        raise ValueError("The model endpoint must be an HTTPS base URL without credentials, query or fragment.")
+    # Validate explicit port syntax/range even if no download is needed yet.
+    parsed.port
+    return value.rstrip("/")
+
+
+def save_endpoint(value):
+    """Persist the installer's selection before downloading, including failed attempts."""
+    endpoint = validate_endpoint(value)
+    root = data_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=root,
+                                         prefix="model-endpoint-", delete=False) as output:
+            temporary = Path(output.name)
+            json.dump({"endpoint": endpoint}, output)
+            output.flush()
+            os.fsync(output.fileno())
+        os.replace(temporary, root / "model-endpoint.json")
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+    return endpoint
+
+
+def model_endpoint():
+    """Use an explicit environment override, then the saved selection, then origin."""
+    endpoint = os.environ.get("HF_ENDPOINT")
+    if not endpoint:
+        settings = data_dir() / "model-endpoint.json"
+        endpoint = (json.loads(settings.read_text(encoding="utf-8"))["endpoint"]
+                    if settings.exists() else "https://huggingface.co")
+    return validate_endpoint(endpoint)
 
 
 def florence_snapshot():
@@ -102,7 +148,7 @@ def ensure_florence(*, download=True, progress=None):
             if not download:
                 raise RuntimeError(f"Florence-2 needs a download or repair: {name}")
             report("downloading", name, 0, artifact["size"])
-            url = f"https://huggingface.co/{FLORENCE_REPO}/resolve/{FLORENCE_REVISION}/{name}"
+            url = f"{model_endpoint()}/{FLORENCE_REPO}/resolve/{FLORENCE_REVISION}/{name}"
             download_file(url, target, artifact,
                           lambda current, total: report("downloading", name, current, total))
     if download:
@@ -126,11 +172,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--florence-only", action="store_true")
+    parser.add_argument("--endpoint", help="Persist an HTTPS Florence endpoint for future desktop retries")
     args = parser.parse_args()
     def emit(event):
         """Flush each event so the GUI can report progress while the worker runs."""
         print(json.dumps(event), flush=True)
     try:
+        if args.endpoint is not None:
+            save_endpoint(args.endpoint)
+            os.environ["HF_ENDPOINT"] = args.endpoint
         prepare = ensure_florence if args.florence_only else prepare_models
         prepare(download=not args.check, progress=emit)
         emit(dict(status="ready", message="Models are verified and ready."))

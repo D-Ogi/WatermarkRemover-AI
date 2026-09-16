@@ -53,3 +53,8 @@ Thumbs.db
 *.safetensors
 .cache/
 huggingface/
+
+# Local test tooling
+.venv-test/
+.pytest_cache/
+.ruff_cache/

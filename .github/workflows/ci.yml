@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cpu-tests:
+    name: CPU tests (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      MPLBACKEND: Agg
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install lightweight test dependencies
+        run: python -m pip install -r requirements-test.txt
+      - name: Check test environment dependencies
+        run: python -m pip check
+      - name: Check Python correctness
+        run: python -m ruff check .
+      - name: Compile application and tests without importing models
+        run: python -m compileall -q remwm.py remwmgui.py utils.py tests
+      - name: Run CPU tests
+        run: python -m pytest
+      - name: Check Bash syntax
+        if: runner.os != 'Windows'
+        run: |
+          bash -n setup.sh
+          bash -n run.sh
+      - name: Check PowerShell syntax
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Join-Path $PWD 'setup.ps1'), [ref]$tokens, [ref]$parseErrors
+          ) | Out-Null
+          if ($parseErrors.Count) {
+            $parseErrors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }

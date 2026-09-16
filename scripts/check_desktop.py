@@ -104,7 +104,6 @@ def check_sidebar_layout(window):
 
 def exercise(window, api):
     """Read real Alpine state and execute actions through JavaScript API promises."""
-    original_config = dict(api.get_config())
     try:
         assert window.events.loaded.wait(60), "Desktop page did not finish loading"
         deadline = time.monotonic() + 20
@@ -145,7 +144,6 @@ def exercise(window, api):
     except BaseException as exc:
         failures.append(repr(exc))
     finally:
-        api.save_config(original_config)
         window.destroy()
 
 
@@ -153,7 +151,10 @@ def watchdog():
     """Bound native window startup and shutdown as well as the page checks."""
     if not finished.wait(90):
         print('Desktop check timed out', flush=True)
-        os._exit(1)
+        try:
+            check_config.cleanup()
+        finally:
+            os._exit(1)
 
 
 threading.Thread(target=watchdog, daemon=True).start()

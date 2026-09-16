@@ -120,9 +120,9 @@ python -m lama_inpaint download
 echo "  [*] Downloading Florence-2 model (~1.5GB)..."
 if [ "$CHINA_MODE" == "1" ]; then
     echo "      Using HF-Mirror for faster download in China"
-    HF_ENDPOINT="$HF_ENDPOINT" python -c "import os; os.environ['HF_ENDPOINT']='$HF_ENDPOINT'; from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)" || echo "  [!] Florence-2 download failed, will retry on first use"
+    HF_ENDPOINT="$HF_ENDPOINT" python -c "import os; os.environ['HF_ENDPOINT']='$HF_ENDPOINT'; from huggingface_hub import snapshot_download; from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)" || echo "  [!] Florence-2 download failed, open Models in the application and choose Download / Retry"
 else
-    python -c "from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)" || echo "  [!] Florence-2 download failed, will retry on first use"
+    python -c "from huggingface_hub import snapshot_download; from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)" || echo "  [!] Florence-2 download failed, open Models in the application and choose Download / Retry"
 fi
 
 echo ""

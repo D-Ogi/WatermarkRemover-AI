@@ -1094,3 +1094,22 @@ body .glass-panel.model-dialog h2 { color: var(--model-accent) !important; }
     color: var(--model-ink) !important;
     border: 1px solid var(--model-accent) !important;
 }
+
+
+/* Keep model readiness inside the status bar, including inset window themes. */
+.status-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+    flex-shrink: 0;
+}
+.status-details {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+.status-details > span { max-width: 100%; flex-wrap: wrap; }
+.status-device { flex: 1 1 160px; min-width: 0; overflow-wrap: anywhere; }
+#models-button { flex: 0 0 auto; max-width: 100%; margin-left: auto; }

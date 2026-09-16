@@ -24,11 +24,14 @@ failures = []
 
 
 
-def check_sidebar_layout(window):
-    """Measure actual rendered controls and tooltip bounds across all themes/languages."""
-    window.resize(800, 600)
+def check_theme_layout(window, width, height):
+    """Measure controls, tooltips and status-bar bounds across themes and languages."""
+    window.resize(width, height)
     window.evaluate_js("""window.sidebarProbe = null; (async () => {
         const app = window.appInstance, rows = [];
+        const originalGpu = app.systemInfo.gpu, originalStatus = app.models.status;
+        app.systemInfo.gpu = 'NVIDIA GeForce RTX 4090 Laptop GPU';
+        app.models.status = 'downloading';
         for (const language of app.availableLanguages) {
             app.t = await loadLanguage(language.id);
             await Alpine.nextTick();
@@ -75,12 +78,36 @@ def check_sidebar_layout(window):
                 const buttonContrast = [...panel.querySelectorAll('button')]
                     .map(node => { const style = getComputedStyle(node);
                         return contrast(style.color, style.backgroundColor); });
-                rows.push({theme: theme.id, language: language.id,
+                const gpu = document.querySelector('[x-text^="systemInfo.gpu"]');
+                const footer = gpu.parentElement;
+                const button = document.querySelector('#models-button');
+                const frame = document.querySelector('main').getBoundingClientRect();
+                const contains = (outer, inner) => inner.left >= outer.left - 1
+                    && inner.right <= outer.right + 1 && inner.top >= outer.top - 1
+                    && inner.bottom <= outer.bottom + 1;
+                const statusBounds = footer.getBoundingClientRect();
+                const buttonBounds = button.getBoundingClientRect();
+                const gpuBounds = gpu.getBoundingClientRect();
+                const overlap = Math.min(buttonBounds.right, gpuBounds.right)
+                    - Math.max(buttonBounds.left, gpuBounds.left) > 1
+                    && Math.min(buttonBounds.bottom, gpuBounds.bottom)
+                    - Math.max(buttonBounds.top, gpuBounds.top) > 1;
+                const statusVisible = contains(frame, statusBounds)
+                    && contains(statusBounds, buttonBounds) && contains(statusBounds, gpuBounds)
+                    && !overlap && footer.scrollWidth <= footer.clientWidth + 1
+                    && gpu.scrollWidth <= gpu.clientWidth + 1
+                    && button.scrollWidth <= button.clientWidth + 1;
+                rows.push({theme: theme.id, language: language.id, statusVisible,
+                    statusGeometry: {frame: frame.toJSON(), footer: statusBounds.toJSON(),
+                        button: buttonBounds.toJSON(), gpu: gpuBounds.toJSON(), overlap,
+                        scroll: footer.scrollWidth, client: footer.clientWidth},
                     contrast: Math.min(...textContrast, ...buttonContrast),
                     client: aside.clientWidth, scroll: aside.scrollWidth,
                     outside, hintsInside: hints.every(Boolean)});
             }
         }
+        app.systemInfo.gpu = originalGpu;
+        app.models.status = originalStatus;
         return rows;
     })().then(rows => { window.sidebarProbe = {rows}; })
         .catch(error => { window.sidebarProbe = {error: String(error)}; });""")
@@ -98,7 +125,8 @@ def check_sidebar_layout(window):
         assert row['scroll'] <= row['client'] + 1, row
         assert not row['outside'] and row['hintsInside'], row
         assert row['contrast'] >= 4.5, row
-    print('THEME PASS', len(results), 'theme/language combinations; minimum model-panel contrast',
+        assert row['statusVisible'], row
+    print('THEME PASS', f'{width}x{height}', len(results), 'theme/language combinations; minimum model-panel contrast',
           round(min(row['contrast'] for row in results), 2), flush=True)
 
 
@@ -139,7 +167,8 @@ def exercise(window, api):
                 break
             time.sleep(.1)
         assert window.evaluate_js("window.savedProbe?.lang") == 'en'
-        check_sidebar_layout(window)
+        check_theme_layout(window, 800, 600)
+        check_theme_layout(window, 1000, 800)
         print('DESKTOP PASS', json.dumps(state), flush=True)
     except BaseException as exc:
         failures.append(repr(exc))
@@ -158,9 +187,9 @@ def watchdog():
 
 
 threading.Thread(target=watchdog, daemon=True).start()
-# WebKit can defer network page loading for an entirely hidden native window.
-# Exercise its normal visible startup on the macOS CI desktop.
-remwmgui.main(exercise, hidden=sys.platform != "darwin")
+# Native engines can defer viewport sizing for an entirely hidden window.
+# Measure the real visible desktop layout (Linux CI supplies Xvfb).
+remwmgui.main(exercise)
 finished.set()
 check_config.cleanup()
 if failures:

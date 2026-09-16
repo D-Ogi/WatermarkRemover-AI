@@ -29,6 +29,10 @@ def check_theme_layout(window, width, height):
     window.resize(width, height)
     window.evaluate_js("""window.sidebarProbe = null; (async () => {
         const app = window.appInstance, rows = [];
+        // Measure final theme styles, not an intermediate animated color.
+        const motion = document.createElement('style');
+        motion.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';
+        document.head.appendChild(motion);
         const originalGpu = app.systemInfo.gpu, originalStatus = app.models.status;
         app.systemInfo.gpu = 'NVIDIA GeForce RTX 4090 Laptop GPU';
         app.models.status = 'downloading';
@@ -108,6 +112,7 @@ def check_theme_layout(window, width, height):
         }
         app.systemInfo.gpu = originalGpu;
         app.models.status = originalStatus;
+        motion.remove();
         return rows;
     })().then(rows => { window.sidebarProbe = {rows}; })
         .catch(error => { window.sidebarProbe = {error: String(error)}; });""")

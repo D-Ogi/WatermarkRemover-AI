@@ -93,11 +93,11 @@ else
     # Select one wheel index; mixing PyPI/mirrors can silently choose a CPU build.
     if command -v nvidia-smi &> /dev/null; then
         echo "  [*] NVIDIA GPU detected, installing CUDA version..."
-        python -m pip install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
+        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
         echo "  [OK] PyTorch installed (CUDA 12.4)"
     else
         echo "  [*] No NVIDIA GPU detected, installing CPU version..."
-        python -m pip install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
+        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
         echo "  [OK] PyTorch installed (CPU)"
     fi
 fi

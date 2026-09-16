@@ -57,6 +57,7 @@ elif 'requirements.txt' in args and os.environ.get('WMR_TEST_FAIL') == '1':
         WMR_TEST_PROGRAM=str(program),
         WMR_TEST_LOG=str(log),
         WMR_TEST_FAIL="1" if fail_install else "0",
+        PIP_EXTRA_INDEX_URL="https://packages.invalid/simple",
     )
     result = subprocess.run(
         ["/bin/bash", str(project / "setup.sh")],
@@ -79,6 +80,7 @@ def test_torch_backend_index_is_unambiguous(tmp_path, gpu, mirror):
     torch_install = next(args for args in commands if "torch>=2.4.0" in args)
     expected = "https://download.pytorch.org/whl/" + ("cu124" if gpu else "cpu")
     assert torch_install[torch_install.index("--index-url") + 1] == expected
+    assert "--isolated" in torch_install
     assert "--extra-index-url" not in torch_install
     assert "-i" not in torch_install
     app_install = next(args for args in commands if "requirements.txt" in args)

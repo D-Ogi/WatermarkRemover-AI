@@ -11,7 +11,7 @@ $PYTHON_EXE = "$PYTHON_DIR\python.exe"
 $CHINA_MODE = $false
 $PIP_INDEX_URL = ""
 $PIP_EXTRA_ARGS = @()
-$HF_ENDPOINT = ""
+$HF_ENDPOINT = "https://huggingface.co"
 
 # Fun facts and tips to show during installation
 $tips = @(
@@ -194,25 +194,9 @@ Write-Host "      Did you know?" -ForegroundColor DarkGray
 Write-Host ""
 
 if ($CHINA_MODE) {
-    # Set HF_ENDPOINT environment variable for China mirror
-    $env:HF_ENDPOINT = $HF_ENDPOINT
     Write-Host "      Using HF-Mirror for faster download in China" -ForegroundColor DarkGray
-    $florenceScript = @"
-import os
-os.environ['HF_ENDPOINT'] = '$HF_ENDPOINT'
-from huggingface_hub import snapshot_download
-from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)
-print('FLORENCE_OK')
-"@
-} else {
-    $florenceScript = @"
-from huggingface_hub import snapshot_download
-from model_assets import FLORENCE_REPO, FLORENCE_REVISION, MANIFEST, ensure_florence; snapshot_download(FLORENCE_REPO, revision=FLORENCE_REVISION, allow_patterns=[f['name'] for f in MANIFEST['files']]); ensure_florence(download=False)
-print('FLORENCE_OK')
-"@
 }
-
-$florenceProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-c", "`"$florenceScript`"" -NoNewWindow -PassThru
+$florenceProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "model_assets", "--florence-only", "--endpoint", $HF_ENDPOINT -NoNewWindow -PassThru
 $florenceHandle = $florenceProcess.Handle
 
 $lastTipTime = Get-Date

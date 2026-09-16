@@ -108,3 +108,61 @@ def test_truncated_response_retains_bytes_for_retry(tmp_path, monkeypatch, artif
         assets.download_file('https://example.invalid/model', target, info, lambda *a: None)
     assert not target.exists()
     assert target.with_suffix('.bin.part').read_bytes() == data[:5]
+
+
+@pytest.mark.parametrize("endpoint", ["http://mirror.example", "file:///tmp/model",
+    "https://user:pass@mirror.example", "https://mirror.example?token=x",
+    "https://mirror.example/#fragment", "https://", "https://mirror.example:bad",
+    "https://mirror.example/with space"])
+def test_invalid_endpoint_is_not_persisted(tmp_path, monkeypatch, endpoint):
+    """Reject insecure or ambiguous configuration before modifying saved settings."""
+    monkeypatch.setenv("WMR_DATA_DIR", str(tmp_path))
+    with pytest.raises(ValueError):
+        assets.save_endpoint(endpoint)
+    assert not (tmp_path / "model-endpoint.json").exists()
+
+
+def test_mirror_survives_process_restart_and_environment_can_override(tmp_path, monkeypatch):
+    """Desktop workers launched later must reuse the installer's saved endpoint."""
+    import os
+    import subprocess
+    import sys
+    monkeypatch.setenv("WMR_DATA_DIR", str(tmp_path))
+    monkeypatch.delenv("HF_ENDPOINT", raising=False)
+    assert assets.model_endpoint() == "https://huggingface.co"
+    assets.save_endpoint("https://mirror.example/models/")
+    result = subprocess.run([sys.executable, "-c",
+        "from model_assets import model_endpoint; print(model_endpoint())"],
+        cwd=assets.Path(assets.__file__).parent, env=os.environ.copy(),
+        capture_output=True, text=True, check=True)
+    assert result.stdout.strip() == "https://mirror.example/models"
+    monkeypatch.setenv("HF_ENDPOINT", "https://override.example")
+    assert assets.model_endpoint() == "https://override.example"
+    monkeypatch.delenv("HF_ENDPOINT")
+    assets.save_endpoint("https://huggingface.co")
+    assert assets.model_endpoint() == "https://huggingface.co"
+
+
+def test_mirror_download_still_rejects_tampering_and_retry_uses_same_endpoint(tmp_path, monkeypatch, artifact):
+    """A saved mirror changes routing, never the pinned revision or checksum policy."""
+    data, info = artifact
+    monkeypatch.setenv("WMR_DATA_DIR", str(tmp_path / "settings"))
+    monkeypatch.delenv("HF_ENDPOINT", raising=False)
+    monkeypatch.delenv("HF_HUB_OFFLINE", raising=False)
+    assets.save_endpoint("https://mirror.example")
+    monkeypatch.setattr(assets, "MANIFEST", {"files": [info]})
+    root = tmp_path / "snapshot"
+    monkeypatch.setattr(assets, "florence_snapshot", lambda: root)
+    replies = iter([b"x" * len(data), data])
+    urls = []
+    def open_response(request, **kwargs):
+        """Return tampered bytes first, then valid bytes on explicit retry."""
+        urls.append(request.full_url)
+        return Response(next(replies))
+    monkeypatch.setattr(assets, "urlopen", open_response)
+    with pytest.raises(RuntimeError, match="SHA-256"):
+        assets.ensure_florence()
+    assert not (root / info["name"]).exists()
+    assert assets.ensure_florence() == root
+    assert (root / info["name"]).read_bytes() == data
+    assert urls == [f"https://mirror.example/{assets.FLORENCE_REPO}/resolve/{assets.FLORENCE_REVISION}/{info['name']}"] * 2

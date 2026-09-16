@@ -46,9 +46,6 @@ def check_theme_layout(window, width, height):
                 const aside = document.querySelector('aside');
                 void aside.offsetWidth;
                 await document.fonts.ready;
-                // WebKit can defer descendant style updates in a hidden dialog.
-                // Exercise its visible state and let both layout and paint settle.
-                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const bounds = aside.getBoundingClientRect();
                 const outside = [...aside.querySelectorAll('button, input, select')]
                     .filter(node => node.getClientRects().length)
@@ -82,9 +79,14 @@ def check_theme_layout(window, width, height):
                     return (Math.max(a, b) + .05) / (Math.min(a, b) + .05);
                 };
                 const background = getComputedStyle(panel).backgroundColor;
-                const textContrast = [...panel.querySelectorAll('h2, p')]
-                    .map(node => contrast(getComputedStyle(node).color, background));
-                const buttonContrast = [...panel.querySelectorAll('button')]
+                // Hidden error/progress messages are not rendered; WebKit may
+                // retain their previous computed colors until they become visible.
+                const visible = node => node.getBoundingClientRect().height > 0
+                    && node.getClientRects().length && node.textContent.trim();
+                const textStyles = [...panel.querySelectorAll('h2, p')].filter(visible)
+                    .map(node => ({text: node.textContent, color: getComputedStyle(node).color}));
+                const textContrast = textStyles.map(style => contrast(style.color, background));
+                const buttonContrast = [...panel.querySelectorAll('button')].filter(visible)
                     .map(node => { const style = getComputedStyle(node);
                         return contrast(style.color, style.backgroundColor); });
                 const gpu = document.querySelector('[x-text^="systemInfo.gpu"]');
@@ -111,6 +113,7 @@ def check_theme_layout(window, width, height):
                         button: buttonBounds.toJSON(), gpu: gpuBounds.toJSON(), overlap,
                         scroll: footer.scrollWidth, client: footer.clientWidth},
                     contrast: Math.min(...textContrast, ...buttonContrast),
+                    modelColors: {background, textStyles},
                     client: aside.clientWidth, scroll: aside.scrollWidth,
                     outside, hintsInside: hints.every(Boolean)});
             }

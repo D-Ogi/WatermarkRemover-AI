@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import sys
 import threading
+import tempfile
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -12,6 +13,11 @@ from desktop_runtime import configure_runtime
 configure_runtime()
 logging.getLogger().addHandler(logging.StreamHandler())
 import remwmgui
+
+# The watchdog may terminate without finally blocks. Never let this diagnostic
+# persist its probe settings in the user's actual configuration, even on timeout.
+check_config = tempfile.TemporaryDirectory(prefix="wmr-desktop-check-")
+remwmgui.CONFIG_FILE = str(Path(check_config.name) / "ui.yml")
 
 finished = threading.Event()
 failures = []
@@ -155,5 +161,6 @@ threading.Thread(target=watchdog, daemon=True).start()
 # Exercise its normal visible startup on the macOS CI desktop.
 remwmgui.main(exercise, hidden=sys.platform != "darwin")
 finished.set()
+check_config.cleanup()
 if failures:
     raise SystemExit('; '.join(failures))

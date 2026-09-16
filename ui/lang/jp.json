@@ -1,128 +1,128 @@
 {
   "app": {
-    "title": "ロリ刻印剥離くん 👧✨"
+    "title": "透かし抹消・限界オタク編 🌀"
   },
   "modes": {
-    "label": "紳士の流儀",
-    "single": "ひとりじめ 💕",
-    "single_tooltip": "一人だけを独占...これが真の愛。お巡りさんこっちです。",
-    "batch": "闇の園・一斉召喚 🌙",
-    "batch_tooltip": "複数の生贄を一度に堕とす...これが我が「無限抱擁」の真髄。"
+    "label": "本日の黒魔術",
+    "single": "ソロ討伐",
+    "single_tooltip": "画像か動画を一つ処理。パーティーを組む友達は実装されていない。",
+    "batch": "百鬼夜行",
+    "batch_tooltip": "フォルダー内をまとめて処理。積みゲーも片付けばいいのに。"
   },
   "settings": {
     "gaslight": {
-      "label": "証拠隠滅",
-      "sublabel": "（何も見てない）",
-      "tooltip": "元ファイル？そんなものは無かった。アリバイは完璧。"
+      "label": "黒歴史を上書き",
+      "sublabel": "（出力ファイル）",
+      "tooltip": "同名の出力ファイルを上書きする。中二病ブログを消した時の手つきで。"
     },
     "ghost": {
-      "label": "脱がす 👙→👻",
-      "sublabel": "（着衣が邪魔）",
-      "tooltip": "刻印を透明に...つまり服を脱がすようなもの。LoRA調教用。合法です（震え声）"
+      "label": "透過の禁術 👻",
+      "sublabel": "（LoRA修行用）",
+      "tooltip": "塗りつぶす代わりに透かし部分を透明化。PNG/WEBP限定。LoRA学習ではアルファマスクも有効にせよ。"
     },
     "sigma_detect": {
-      "label": "ストライクゾーン 🎯",
-      "tooltip": "大きすぎるのは対象外...僕は小さいのが好きなんだ。"
+      "label": "結界の上限 (%)",
+      "tooltip": "画像全体に対する透かし面積の上限。でかすぎる相手はスルー。勇気と無謀は別だ。"
     },
     "detection_prompt": {
-      "label": "ターゲット指定",
-      "placeholder": "JS, JC, JK...",
-      "tooltip": "何を狩る？僕の目は誤魔化せない...ハァハァ。"
+      "label": "詠唱コマンド",
+      "placeholder": "watermark",
+      "tooltip": "検出する対象を指定。watermark、logo、text、signature など。呪文を長くしてもSSRは出ない。"
     },
     "output_format": {
-      "label": "保存形式",
-      "tooltip": "どんな姿で地下室に保管する？",
-      "auto": "おまかせ",
-      "png": "PNG (無修正)",
-      "jpg": "JPG (モザイク)",
-      "webp": "WEBP (薄い本)",
-      "mp4": "MP4 (動画フォルダ)",
-      "avi": "AVI (おじさん)"
+      "label": "封印形式",
+      "tooltip": "出力形式を選ぶ。自動なら元の形式。拡張子に課金要素はない。",
+      "auto": "自動（運営に祈る）",
+      "png": "PNG（劣化なし）",
+      "jpg": "JPG（圧縮の代償）",
+      "webp": "WEBP（新装版）",
+      "mp4": "MP4（動画）",
+      "avi": "AVI（古の動画）"
     }
   },
   "video_settings": {
-    "title": "動画のお時間 📹",
+    "title": "動く黒歴史",
     "detection_skip": {
-      "label": "パンチラ検知間隔",
-      "unit": "コマ",
-      "hint": "高速スキップ...でも決定的瞬間を見逃すかも？"
+      "label": "サボり間隔",
+      "unit": "フレーム",
+      "hint": "間隔を広げると速いが、一瞬の透かしを見逃す。総集編の作画と同じ理屈。"
     },
     "fade_in": {
-      "label": "前戯",
-      "hint": "焦らしプレイ...ゆっくり始める。"
+      "label": "登場前バッファ",
+      "hint": "除去区間を過去側へ延長。登場演出までまとめて処理する。"
     },
     "fade_out": {
-      "label": "賢者タイム",
-      "hint": "余韻を楽しむ...まだ終わりたくない。"
+      "label": "退場後バッファ",
+      "hint": "除去区間を未来側へ延長。しつこい次回予告もおしまい。"
     }
   },
   "buttons": {
-    "preview": "👁️ 覗き見",
-    "preview_tooltip": "ふふ...ちょっと覗くだけだから。犯罪じゃないよ？",
-    "preview_loading": "👁️ 観察中...ﾊｧﾊｧ",
-    "start": "いただきます！🙏",
-    "start_processing": "ﾍﾟﾛﾍﾟﾛしてる... 👅",
-    "stop": "お巡りさん来た！🚔",
-    "browse": "物色する 👀",
-    "try_again": "🔄 おかわり",
-    "close": "証拠隠滅",
-    "copy_error": "📋 通報用"
+    "preview": "🔍 邪眼で下見",
+    "preview_tooltip": "処理前に検出枠を見る。脳内設定より実際の枠を信じろ。",
+    "preview_loading": "🔄 魔眼を調整中…",
+    "start": "禁術をぶっ放す",
+    "start_processing": "詠唱中…",
+    "stop": "詠唱キャンセル",
+    "browse": "召喚する",
+    "try_again": "🔄 もう一周",
+    "close": "閉じる",
+    "copy_error": "📋 事故報告をコピー"
   },
   "dropzone": {
-    "title": "ここに落として 💝",
-    "subtitle": "僕の地下室へようこそ",
-    "video_hint": "動く...いいね...📹",
-    "image_hint": "静止画...永遠に僕のもの 📸"
+    "title": "供物を投げ込め",
+    "subtitle": "またはクリックしてファイルを選ぶ",
+    "video_hint": "動画の供物。クリックで変更。",
+    "image_hint": "静止画の供物。クリックで変更。"
   },
   "output": {
-    "placeholder": "地下室フォルダ..."
+    "placeholder": "成果物の保管庫…"
   },
   "status_bar": {
-    "cuda": "性能 (CUDA)",
-    "ffmpeg": "編集 (FFmpeg)",
-    "ram": "興奮度",
-    "on": "ﾋﾞﾝﾋﾞﾝ",
-    "off": "萎え",
-    "cpu_mode": "遅漏モード"
+    "cuda": "魔力 (CUDA)",
+    "ffmpeg": "動画術 (FFmpeg)",
+    "ram": "脳内メモリ",
+    "on": "覚醒",
+    "off": "封印中",
+    "cpu_mode": "人力詠唱 (CPU)"
   },
   "preview_modal": {
-    "title": "品定め 🔍",
-    "prompt": "ターゲット:",
+    "title": "邪眼の検出報告",
+    "prompt": "詠唱:",
     "detected": "発見:",
-    "source": "出処:",
-    "regions": "箇所",
-    "bounding_boxes": "拘束エリア:",
-    "of_image": "% の領域",
-    "too_large": "(ババア無理)",
-    "loading": "スカウト中...",
-    "loading_hint": "(初回DL中...我慢できない)"
+    "source": "入力:",
+    "regions": "領域",
+    "bounding_boxes": "検出結界:",
+    "of_image": "% の画像面積",
+    "too_large": "（上限超過・見送り）",
+    "loading": "結界を計測中…",
+    "loading_hint": "準備済みのモデルを読み込み中。初回準備は Models パネルから。"
   },
-  "marquee": "紳士の嗜み /// 僕は何も悪くない /// ロリは正義 /// 二次元だからセーフ /// お巡りさんこっちです /// 通報しないで ///",
+  "marquee": "三十路オタクの最終兵器 /// ガチャの天井より低い自己肯定感 /// 財布だけ異世界転生 /// 魔法カードとはクレカのことだ ///",
   "processing_status": [
-    "物色中...",
-    "ターゲット発見...",
-    "近づいている...",
-    "ふふ...いい子だね...",
-    "頭ﾅﾃﾞﾅﾃﾞ...",
-    "ﾍﾟﾛﾍﾟﾛ...",
-    "もうすぐ...",
-    "イク...！"
+    "透かしを索敵中…",
+    "邪眼、ただいまピント調整中…",
+    "背景の作画を修復中…",
+    "詠唱を噛んだので心の中でやり直す…",
+    "SSRではなくピクセルを生成中…",
+    "限界オタク、今日は仕事してる…",
+    "賢者タイムより長い待ち時間…",
+    "最終回のエンドカードを準備中…"
   ],
   "logs": {
-    "init": "紳士モード起動...今日も元気だ 👋",
-    "starting": "狩りの時間だ...ふふ。",
-    "first_run_hint": "(初回はﾀﾞｳﾝﾛｰﾄﾞ中...ﾜｸﾜｸ)",
-    "done": "ごちそうさまでした 🙏✨",
-    "stopped": "なっ...邪魔するな！💢",
-    "no_input": "獲物がいない...寂しい 😢",
-    "ghost_video_warning": "動画は脱がせない...残念。",
-    "no_ffmpeg": "FFmpeg無し...声が聞こえない 🔇",
-    "api_error": "API死亡...run.bat実行しろ 👶",
-    "preview_failed": "スカウト失敗:",
-    "preview_result": "{total}人発見、{accepted}人を確保...ふふふ 🎯",
-    "cooking": "調理中...👨‍🍳"
+    "init": "禁術端末、起動。社会性は別売り。",
+    "starting": "処理開始。今回はガチャじゃない。",
+    "first_run_hint": "モデルが未準備なら Models パネルでダウンロード。回線に根性論は通じない。",
+    "done": "処理完了。成果物は出た。恋人は出ない。",
+    "stopped": "ユーザーが処理を停止。撤退も戦術。",
+    "no_input": "供物がない。先にファイルを選べ。",
+    "ghost_video_warning": "動画は透過できないため透明モードを解除。禁術にも仕様がある。",
+    "no_ffmpeg": "FFmpeg がない。出力動画は無音。脳内声優で我慢しろ。",
+    "api_error": "API が沈黙。アプリのランチャーか run.bat/run.sh から起動せよ。",
+    "preview_failed": "邪眼が故障:",
+    "preview_result": "{total} 領域を検出、{accepted} 領域を除去予定。",
+    "cooking": "背景を錬成中…"
   },
   "lang": {
-    "label": "言語"
+    "label": "言語・流派"
   }
 }

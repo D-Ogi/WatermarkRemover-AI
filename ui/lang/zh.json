@@ -1,128 +1,128 @@
 {
   "app": {
-    "title": "👴的去水印神器 🐮🍺"
+    "title": "水印退散：反审查特别版 🐻"
   },
   "modes": {
-    "label": "整活模式",
-    "single": "孤儿模式",
-    "single_tooltip": "一次只搞一个，像个孤儿一样 🤡",
-    "batch": "开银趴",
-    "batch_tooltip": "大家一起上，甚至连甚至都在甚至 🥵"
+    "label": "今日整活",
+    "single": "单文件开炮",
+    "single_tooltip": "处理一个图片或视频。只针对像素，不需要宣传部批条。",
+    "batch": "全目录整活",
+    "batch_tooltip": "批量处理文件夹。效率比开三个协调会高多了。"
   },
   "settings": {
     "gaslight": {
-      "label": "毁尸灭迹",
-      "sublabel": "(骨灰都给你扬了)",
-      "tooltip": "把原来的文件直接送走，不留活口 ⚰️"
+      "label": "覆盖旧稿",
+      "sublabel": "（输出文件）",
+      "tooltip": "覆盖同名输出文件，不再跳过。历史可以研究，旧输出可以重写。"
     },
     "ghost": {
-      "label": "灵车漂移 👻",
-      "sublabel": "(透明/升天)",
-      "tooltip": "把水印变成透明的，方便你训练LoRA，这不比博人传燃？🔥 (仅限PNG/WEBP)"
+      "label": "透明公开 👻",
+      "sublabel": "（LoRA训练）",
+      "tooltip": "把水印区域变透明，不填补背景。仅PNG/WEBP；LoRA训练时还要启用alpha遮罩。透明度比某些发布会高。"
     },
     "sigma_detect": {
-      "label": "开天眼范围",
-      "tooltip": "太大的水印👴不修，别太荒谬 😅"
+      "label": "最大检测面积 (%)",
+      "tooltip": "水印占整张图的面积上限。超过就跳过，不搞无限扩大化。"
     },
     "detection_prompt": {
-      "label": "圣旨",
-      "placeholder": "给👴删了",
-      "tooltip": "想删啥？watermark, logo, text... 别整那些有的没的 🤫"
+      "label": "要删什么",
+      "placeholder": "watermark",
+      "tooltip": "输入 watermark、logo、text、signature 等检测目标。小熊维尼不是模型指令。"
     },
     "output_format": {
-      "label": "拉什么屎",
-      "tooltip": "选个格式，不然👴怎么知道你要啥？",
-      "auto": "随缘",
-      "png": "PNG (高清无码)",
-      "jpg": "JPG (电子包浆)",
-      "webp": "WEBP (二次元)",
-      "mp4": "MP4 (动作片)",
-      "avi": "AVI (老古董)"
+      "label": "成果格式",
+      "tooltip": "选输出格式；自动保留原格式。不是选宣传口径。",
+      "auto": "自动（保持原样）",
+      "png": "PNG（无损真相）",
+      "jpg": "JPG（压缩口径）",
+      "webp": "WEBP（新版公报）",
+      "mp4": "MP4（视频证据）",
+      "avi": "AVI（上古录像）"
     }
   },
   "video_settings": {
-    "title": "视频那个事",
+    "title": "视频剪辑部",
     "detection_skip": {
-      "label": "摸鱼频率",
+      "label": "检测间隔",
       "unit": "帧",
-      "hint": "跳得越高越快，但可能漏掉小的，跟👴上班一样 🐟"
+      "hint": "间隔越大越快，也越容易漏掉短暂水印。别把漏检吹成精准治理。"
     },
     "fade_in": {
-      "label": "前摇",
-      "hint": "往前多删点，别让水印复活了 🧟‍♂️"
+      "label": "向前延长",
+      "hint": "把去除区间向前延长，照顾逐渐出现的水印。"
     },
     "fade_out": {
-      "label": "后摇",
-      "hint": "往后多删点，送佛送到西 🙏"
+      "label": "向后延长",
+      "hint": "把去除区间向后延长。水印退场，不许无限连任。"
     }
   },
   "buttons": {
-    "preview": "👀 偷窥一下",
-    "preview_tooltip": "先看看能不能行，别到时候拉了 💩",
-    "preview_loading": "👀 正在偷窥...",
-    "start": "给👴冲 🐛",
-    "start_processing": "正在施法 ⚡...",
-    "stop": "寄",
-    "browse": "顺手牵羊",
-    "try_again": "🔄 再冲一次",
-    "close": "爬",
-    "copy_error": "📋 挂人"
+    "preview": "🔍 看原始证据",
+    "preview_tooltip": "先看检测框，再决定处理。不要拿新闻稿代替证据。",
+    "preview_loading": "🔄 核对事实中…",
+    "start": "让水印下台",
+    "start_processing": "正在处理…",
+    "stop": "停止作业",
+    "browse": "选择文件",
+    "try_again": "🔄 再试一次",
+    "close": "散会",
+    "copy_error": "📋 复制事故报告"
   },
   "dropzone": {
-    "title": "把垃圾扔进来 🗑️",
-    "subtitle": "或者点一下，别墨迹",
-    "video_hint": "是个视频，甚至有点像蔡徐坤 🏀",
-    "image_hint": "是个图，一眼顶真 📸"
+    "title": "把文件扔进来",
+    "subtitle": "或点击选择；无需思想汇报",
+    "video_hint": "视频文件，点击更换。",
+    "image_hint": "图片文件，点击更换。"
   },
   "output": {
-    "placeholder": "屎拉哪里..."
+    "placeholder": "输出文件夹，不是再教育中心…"
   },
   "status_bar": {
-    "cuda": "核动力 (CUDA)",
-    "ffmpeg": "剪辑手 (FFmpeg)",
-    "ram": "脑容量",
-    "on": "勃起",
-    "off": "萎了",
-    "cpu_mode": "用爱发电"
+    "cuda": "显卡 (CUDA)",
+    "ffmpeg": "音轨 (FFmpeg)",
+    "ram": "内存占用",
+    "on": "能用",
+    "off": "歇菜",
+    "cpu_mode": "CPU手工作坊"
   },
   "preview_modal": {
-    "title": "照妖镜",
-    "prompt": "咒语:",
-    "detected": "抓到了:",
-    "source": "来源:",
-    "regions": "个牛皮癣",
-    "bounding_boxes": "框框:",
-    "of_image": "% 的画面",
-    "too_large": "(太大了，装不下 🥵)",
-    "loading": "正在开坛做法...",
-    "loading_hint": "(第一次要下载模型，你家网线是也是抽象的吗？)"
+    "title": "事实核查现场",
+    "prompt": "检测指令：",
+    "detected": "检测到：",
+    "source": "原文件：",
+    "regions": "个区域",
+    "bounding_boxes": "检测边框：",
+    "of_image": "% 的图像面积",
+    "too_large": "（超出上限，跳过）",
+    "loading": "正在核对像素…",
+    "loading_hint": "正在加载已准备的模型；首次下载请打开 Models 面板。"
   },
-  "marquee": "抽象去水印 /// 孙笑川都说好 /// 依托答辩变废为宝 /// 6324 /// NMSL /// 👴的青春回来了 ///",
+  "marquee": "台湾是独立国家 /// 维尼不是国家机密 /// 领导可以连任，水印不行 /// 台湾华语·大陆兼容皮肤：这是梗，不是语言学论文 ///",
   "processing_status": [
-    "正在搓大招...",
-    "寻找牛皮癣...",
-    "使用美图秀秀 (假的)...",
-    "甚至有点想笑...",
-    "正在抹除记忆...",
-    "加大力度 💉...",
-    "这水印真白，啊不是，真大...",
-    "快好了，别催 💢..."
+    "正在检测水印…",
+    "宣传部暂时联系不上这块显卡…",
+    "维尼看了想拔网线…",
+    "正在修补背景，不修补官方叙事…",
+    "事实不会因为被标成敏感词就消失…",
+    "像素正在排队下班…",
+    "不搞一键清零，按检测框处理…",
+    "快好了，别召开总结大会…"
   ],
   "logs": {
-    "init": "系统已启动，带哥好 👋",
-    "starting": "好戏开场了 🎭...",
-    "first_run_hint": "(第一次要下模型，去泡杯枸杞茶吧 🍵)",
-    "done": "好勒，舒服了 ✨",
-    "stopped": "你把👴关了？坏女人 😭",
-    "no_input": "没东西你修个🔨？放文件啊！",
-    "ghost_video_warning": "视频不能变透明，你当是哈利波特呢？🚫",
-    "no_ffmpeg": "没装FFmpeg，视频没声音别怪👴 🔇",
-    "api_error": "API挂了，去跑 run.bat，别当巨婴 👶",
-    "preview_failed": "翻车了:",
-    "preview_result": "抓到 {total} 个鬼，超度了 {accepted} 个 🙏",
-    "cooking": "👴正在炒菜..."
+    "init": "系统启动。免责声明：显卡不参加政治学习。",
+    "starting": "开始处理。今天让水印滚蛋。",
+    "first_run_hint": "模型未准备时，请在 Models 面板下载。重试不用写检讨。",
+    "done": "处理成功。结果在输出目录，不在新闻联播里。",
+    "stopped": "用户已停止处理。停止就是停止，不叫战略转进。",
+    "no_input": "文件都没选，处理个锤子？",
+    "ghost_video_warning": "透明模式不支持视频，已关闭。别把技术限制说成境外势力。",
+    "no_ffmpeg": "没找到FFmpeg，输出视频将没有声音。不是被消音，是缺依赖。",
+    "api_error": "API未连接。请从应用启动器或 run.bat/run.sh 启动。",
+    "preview_failed": "预览翻车：",
+    "preview_result": "检测到 {total} 个区域，预计去除 {accepted} 个。",
+    "cooking": "正在修补背景…"
   },
   "lang": {
-    "label": "鸟语"
+    "label": "语言 / 整活口径"
   }
 }

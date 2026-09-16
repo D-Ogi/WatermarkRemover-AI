@@ -86,12 +86,12 @@ def test_torch_backend_index_is_unambiguous(tmp_path, gpu, mirror):
     app_install = next(args for args in commands if "requirements.txt" in args)
     assert ("-i" in app_install) == mirror
     assert ["-m", "pip", "check"] in commands
-    assert ["-m", "lama_inpaint", "download"] in commands
+    assert ["-m", "lama_inpaint", "download", "--verbose"] in commands
 
 
 def test_install_failure_stops_before_model_preparation(tmp_path):
     """A failed dependency install must stop before download or success reporting."""
     result, commands = run_setup(tmp_path, gpu=False, mirror=False, fail_install=True)
     assert result.returncode == 17
-    assert ["-m", "lama_inpaint", "download"] not in commands
+    assert ["-m", "lama_inpaint", "download", "--verbose"] not in commands
     assert "Setup complete!" not in result.stdout

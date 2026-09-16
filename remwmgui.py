@@ -34,6 +34,9 @@ class Api:
     def __init__(self):
         self.window = None
         self.process = None
+        self._preview_process = None
+        self._preview_running = False
+        self._closed = False
         self.is_running = False
         self._process_lock = threading.Lock()
         self._stop_requested = threading.Event()
@@ -47,12 +50,14 @@ class Api:
 
     def download_models(self):
         """Download missing assets or retry a failed transfer using verified caches."""
-        if self.is_running:
-            return {"error": "Wait until processing finishes"}
+        if self.is_running or self._preview_running:
+            return {"error": "Wait until processing or preview finishes"}
         return self._models.start()
 
     def _close(self):
         """Reap only child processes created by this application window."""
+        with self._process_lock:
+            self._closed = True
         self.stop_processing()
         self._models.close()
 
@@ -320,8 +325,10 @@ class Api:
 
         # Start processing in background thread
         with self._process_lock:
-            if self.is_running:
-                return {"error": "Already running"}
+            if self._closed:
+                return {"error": "Window is closing"}
+            if self.is_running or self._preview_running:
+                return {"error": "Processing or preview is already running"}
             self.is_running = True
             self._stop_requested.clear()
         threading.Thread(target=self._run_process, args=(cmd,), daemon=True).start()
@@ -420,9 +427,11 @@ class Api:
         """Stop the current processing"""
         self._stop_requested.set()
         with self._process_lock:
-            process = self.process
+            processes = (self.process, self._preview_process)
 
-        if process:
+        for process in processes:
+            if process is None:
+                continue
             try:
                 process.terminate()
                 try:
@@ -436,51 +445,48 @@ class Api:
         return {'status': 'stopped'}
 
     def preview_detection(self, settings):
-        """
-        Preview watermark detection via CLI subprocess.
-        Returns image with bounding boxes drawn as base64.
-        """
+        """Run one owned preview worker and return detections or a visible error."""
         if self._models.status().get('status') != 'ready':
             return {'error': 'Prepare the AI models before processing. Open Models and choose Download / Retry.'}
         input_path = settings.get('input', '')
-        detection_prompt = settings.get('detection_prompt', 'watermark')
-        max_bbox = settings.get('max_bbox', 15)
-
         if not input_path:
             return {'error': 'No input path specified'}
-
+        with self._process_lock:
+            if self._closed:
+                return {'error': 'Window is closing'}
+            if self.is_running or self._preview_running:
+                return {'error': 'Processing or preview is already running'}
+            self._preview_running = True
+        process = None
         try:
-            # Call CLI with --preview flag
-            cmd = [
-                python_executable(), str(APP_ROOT / 'remwm.py'),
-                input_path, '--preview',
-                '--max-bbox-percent', str(int(max_bbox)),
-                '--detection-prompt', detection_prompt
-            ]
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                timeout=120,
-                **worker_options(offline=True)
-            )
-
-            if result.returncode != 0:
-                return {'error': result.stderr or 'Preview failed'}
-
-            # Parse JSON output from CLI
-            output = result.stdout.strip()
-            # Find JSON in output (may have log lines before it)
-            for line in output.split('\n'):
+            cmd = [python_executable(), str(APP_ROOT / 'remwm.py'), input_path, '--preview',
+                   '--max-bbox-percent', str(int(settings.get('max_bbox', 15))),
+                   '--detection-prompt', settings.get('detection_prompt', 'watermark')]
+            with self._process_lock:
+                if self._closed:
+                    return {'error': 'Window is closing'}
+                process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                           **worker_options(offline=True))
+                self._preview_process = process
+            output, errors = process.communicate(timeout=120)
+            if process.returncode != 0:
+                return {'error': errors or 'Preview failed or was cancelled'}
+            for line in output.strip().splitlines():
                 if line.startswith('{'):
                     return json.loads(line)
-
             return {'error': 'No preview data returned'}
-
         except subprocess.TimeoutExpired:
             return {'error': 'Preview timed out'}
-        except Exception as e:
-            return {'error': str(e)}
+        except Exception as error:
+            return {'error': str(error)}
+        finally:
+            if process is not None:
+                if process.poll() is None:
+                    process.kill()
+                process.communicate()
+            with self._process_lock:
+                self._preview_process = None
+                self._preview_running = False
 
 
 def main(startup=None, *, hidden=False):

@@ -12,7 +12,10 @@ from lama_inpaint.processing import InpaintProcessor
 
 @pytest.fixture
 def controlled_inpainting(monkeypatch):
+    """Keep detection and prediction deterministic and select the no-audio video path."""
+
     def mask(image, *args, **kwargs):
+        """Select a fixed rectangle in the supplied image coordinates."""
         values = np.zeros((image.height, image.width), np.uint8)
         values[16:32, 16:32] = 255
         return Image.fromarray(values)
@@ -20,6 +23,7 @@ def controlled_inpainting(monkeypatch):
     monkeypatch.setattr(remwm, "get_watermark_mask", mask)
 
     def no_ffmpeg(*args, **kwargs):
+        """Choose the no-audio fallback deliberately for the silent fixture."""
         raise FileNotFoundError("controlled no-audio fixture")
 
     monkeypatch.setattr(remwm.subprocess, "check_output", no_ffmpeg)
@@ -29,6 +33,7 @@ def controlled_inpainting(monkeypatch):
 def test_image_application_path_preserves_source_and_colors(
     tmp_path, controlled_inpainting
 ):
+    """Check the real image routing path, source preservation and RGB/BGR conversion."""
     source, output = tmp_path / "source.png", tmp_path / "output.png"
     Image.new("RGB", (64, 48), (20, 60, 100)).save(source)
     before = source.read_bytes()
@@ -55,6 +60,7 @@ def test_image_application_path_preserves_source_and_colors(
 def test_short_video_paths_keep_frames_and_dimensions(
     tmp_path, controlled_inpainting, monkeypatch, detection_skip
 ):
+    """Exercise both video routes and check frame count, geometry and channel order."""
     source, output = tmp_path / "source.avi", tmp_path / "output.mp4"
     writer = cv2.VideoWriter(str(source), cv2.VideoWriter_fourcc(*"MJPG"), 5, (64, 48))
     assert writer.isOpened(), "test requires the OpenCV MJPG video writer"

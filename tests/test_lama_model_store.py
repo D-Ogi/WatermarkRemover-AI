@@ -12,6 +12,7 @@ from lama_inpaint import model_store as store
 
 @pytest.fixture
 def artifact(monkeypatch):
+    """Pin verification to tiny controlled bytes so download tests need no real weights."""
     data = b"controlled model fixture"
     monkeypatch.setattr(store, "MODEL_SIZE", len(data))
     monkeypatch.setattr(store, "MODEL_SHA256", hashlib.sha256(data).hexdigest())
@@ -19,9 +20,11 @@ def artifact(monkeypatch):
 
 
 def test_download_then_offline_cache_reuse(tmp_path, monkeypatch, artifact):
+    """Download once and verify that both online and offline reuse avoid another request."""
     calls = []
 
     def response(url, timeout):
+        """Record a network attempt and supply the controlled artifact bytes."""
         assert url == store.MODEL_URL and timeout == 30
         calls.append(url)
         return io.BytesIO(artifact)
@@ -37,6 +40,7 @@ def test_download_then_offline_cache_reuse(tmp_path, monkeypatch, artifact):
 
 @pytest.mark.parametrize("bad", [b"", b"truncated", b"x" * 200])
 def test_bad_download_never_published(tmp_path, monkeypatch, artifact, bad):
+    """Reject missing, truncated or oversized transfers without leaving a cache artifact."""
     monkeypatch.setattr(store, "urlopen", lambda *a, **k: io.BytesIO(bad))
     with pytest.raises(store.ModelError):
         store.ensure_model(tmp_path)
@@ -45,13 +49,17 @@ def test_bad_download_never_published(tmp_path, monkeypatch, artifact, bad):
 
 
 def test_same_size_tampering_rejected_offline(tmp_path, artifact):
+    """Require the digest as well as size when accepting offline weights."""
     (tmp_path / store.MODEL_NAME).write_bytes(b"x" * len(artifact))
     with pytest.raises(store.ModelError, match="No verified"):
         store.ensure_model(tmp_path, download=False)
 
 
 def test_missing_offline_model_does_not_connect(tmp_path, monkeypatch, artifact):
+    """Fail an absent offline cache without opening a network connection."""
+
     def fail(*a, **k):
+        """Reject an unexpected network request in an offline test."""
         pytest.fail("offline mode must not connect")
 
     monkeypatch.setattr(store, "urlopen", fail)
@@ -60,11 +68,13 @@ def test_missing_offline_model_does_not_connect(tmp_path, monkeypatch, artifact)
 
 
 def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact):
+    """Keep the old artifact and remove temporary data after a connection interruption."""
     old = tmp_path / store.MODEL_NAME
     old.write_bytes(b"old invalid file")
 
     class Interrupted(io.BytesIO):
         def read(self, size=-1):
+            """Supply one partial chunk, then simulate an interrupted connection."""
             if self.tell():
                 raise OSError("connection interrupted")
             return super().read(5)
@@ -79,6 +89,7 @@ def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact
 def test_corrupt_cache_replaced_only_after_verification(
     tmp_path, monkeypatch, artifact
 ):
+    """Replace an invalid existing artifact only with the complete verified fixture."""
     target = tmp_path / store.MODEL_NAME
     target.write_bytes(b"bad")
     monkeypatch.setattr(store, "urlopen", lambda *a, **k: io.BytesIO(artifact))
@@ -86,9 +97,11 @@ def test_corrupt_cache_replaced_only_after_verification(
 
 
 def test_concurrent_downloads_share_verified_artifact(tmp_path, monkeypatch, artifact):
+    """Concurrent callers must obtain one verified download through the artifact lock."""
     calls = []
 
     def response(*a, **k):
+        """Record a network attempt and supply the controlled artifact bytes."""
         calls.append(1)
         return io.BytesIO(artifact)
 
@@ -100,6 +113,7 @@ def test_concurrent_downloads_share_verified_artifact(tmp_path, monkeypatch, art
 
 
 def test_torch_cache_environment(monkeypatch, tmp_path):
+    """Apply Torch cache precedence before falling back to the XDG cache directory."""
     monkeypatch.setenv("TORCH_HOME", str(tmp_path / "custom"))
     assert store.default_cache_dir() == tmp_path / "custom" / "hub" / "checkpoints"
     monkeypatch.delenv("TORCH_HOME")
@@ -108,6 +122,7 @@ def test_torch_cache_environment(monkeypatch, tmp_path):
 
 
 def test_verification_rewinds_stream(artifact):
+    """Leave a verified open stream ready for deserialization from its beginning."""
     stream = io.BytesIO(artifact)
     stream.seek(4)
     store.verify_stream(stream)
@@ -117,9 +132,11 @@ def test_verification_rewinds_stream(artifact):
 def test_incomplete_http_response_is_reported_and_cleaned(
     tmp_path, monkeypatch, artifact
 ):
+    """Convert an incomplete HTTP response into a controlled error without residue."""
     from http.client import IncompleteRead
 
     def interrupted(*args, **kwargs):
+        """Simulate an incomplete HTTP response before an artifact can be published."""
         raise IncompleteRead(b"partial", len(artifact))
 
     monkeypatch.setattr(store, "urlopen", interrupted)

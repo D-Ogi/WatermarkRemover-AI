@@ -47,6 +47,7 @@ def verify_stream(stream):
 
 
 def _is_valid(path):
+    """Return whether an existing artifact matches the pinned size and digest."""
     try:
         with path.open("rb") as stream:
             verify_stream(stream)
@@ -82,6 +83,7 @@ def ensure_model(cache_dir=None, *, download=True):
 
 
 def _download(target):
+    """Publish only a complete verified transfer; retain the old file on failure."""
     temporary = None
     try:
         with tempfile.NamedTemporaryFile(

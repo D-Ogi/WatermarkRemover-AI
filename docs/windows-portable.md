@@ -89,7 +89,7 @@ validation evidence. Build diagnostics are not a promise of byte-for-byte
 reproducible archives: preserve the emitted package inventory and checksum.
 
 For application-only rebuilds, `--refresh-app` requires matching Python, backend,
-Torch/pip versions and dependency manifests from the previous build. It replaces
+Torch, torchvision, and pip versions and dependency manifests from the previous build. It replaces
 application directories so removed files cannot remain. Runtime changes or old
 build metadata require a fresh output directory. User data and the embedded runtime
 are preserved during an application-only refresh.

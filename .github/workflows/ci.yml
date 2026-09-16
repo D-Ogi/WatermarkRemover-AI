@@ -36,7 +36,7 @@ jobs:
       - name: Check Python correctness
         run: python -m ruff check .
       - name: Compile application and tests without importing models
-        run: python -m compileall -q remwm.py remwmgui.py utils.py tests
+        run: python -m compileall -q remwm.py remwmgui.py utils.py lama_inpaint tests
       - name: Run CPU tests
         run: python -m pytest
       - name: Check Bash syntax
@@ -57,3 +57,44 @@ jobs:
             $parseErrors | ForEach-Object { Write-Error $_ }
             exit 1
           }
+
+  application-tests:
+    name: Application runtime (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    env:
+      MPLBACKEND: Agg
+      HF_HUB_OFFLINE: "1"
+      TRANSFORMERS_OFFLINE: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install CPU PyTorch (Linux/Windows)
+        if: runner.os != 'macOS'
+        run: python -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - name: Install PyTorch (macOS)
+        if: runner.os == 'macOS'
+        run: python -m pip install torch torchvision
+      - name: Install full application with the normal resolver
+        run: python -m pip install -r requirements.txt pytest matplotlib
+      - name: Verify full application environment
+        run: |
+          python -m pip check
+          python -c "import remwm, webview, yaml, psutil; import importlib.util; assert importlib.util.find_spec('iopaint') is None"
+          python remwm.py --help
+      - name: Exercise application and TorchScript adapter without model downloads
+        run: python -m pytest
+      - name: Check installed desktop backend (Linux)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a python scripts/check_webview.py
+      - name: Check installed desktop backend (Windows/macOS)
+        if: runner.os != 'Linux'
+        run: python scripts/check_webview.py

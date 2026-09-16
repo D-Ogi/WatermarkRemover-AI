@@ -20,7 +20,9 @@ python -m compileall -q remwm.py remwmgui.py utils.py tests
 
 CI runs these checks on Windows, Linux, and macOS. It also parses the PowerShell installer and checks Bash syntax and line endings. The lint baseline catches syntax errors and selected correctness errors; it does not require reformatting existing application code.
 
-These checks use CPU fixtures. They do not install the full application, launch its GUI, download model weights, or prove CUDA/MPS compatibility. The test dependencies are separate from the application dependencies. A successful `pip check` in the test environment only validates that environment.
+These lightweight checks use CPU fixtures. They do not install the full application, launch its GUI, download model weights, or prove CUDA/MPS compatibility. The test dependencies are separate from the application dependencies. A successful `pip check` in the test environment only validates that environment.
+
+A separate application CI job installs `requirements.txt` on all three platforms with the normal resolver, runs `pip check` in that environment, verifies application imports and CLI help, and tests the adapter using a generated TorchScript fixture. It also checks image and short-video routing without downloading detection models. This job does not prove a GUI interaction or real-model/GPU inference. See [LaMA runtime validation](docs/lama-runtime.md#validation).
 
 ## Evidence required by change type
 
@@ -45,7 +47,7 @@ GPU/model integration tests require a separate trusted environment and must not 
 
 Automated review provides suggestions; maintainers verify findings against the code and test evidence. A bot's approval does not replace application testing. Resolve applicable review findings or explain why they do not apply. Maintainers decide when to merge.
 
-Once the new CI jobs have passed reliably, maintainers can require their status checks through repository rules. Adding this workflow alone does not enable branch protection. Full installation and GUI automation remain follow-up work while the application's dependency and backend setup issues are being resolved.
+Once the new CI jobs have passed reliably, maintainers can require their status checks through repository rules. Adding this workflow alone does not enable branch protection. Full-manifest installation checks run in the application job; installer-script execution and GUI interaction still require separate validation on affected platforms.
 
 ## Dependency updates
 

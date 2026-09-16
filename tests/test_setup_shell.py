@@ -73,6 +73,7 @@ elif 'requirements.txt' in args and os.environ.get('WMR_TEST_FAIL') == '1':
 @pytest.mark.parametrize("gpu", [False, True])
 @pytest.mark.parametrize("mirror", [False, True])
 def test_torch_backend_index_is_unambiguous(tmp_path, gpu, mirror):
+    """Verify CPU/CUDA index selection independently of the general package mirror."""
     result, commands = run_setup(tmp_path, gpu=gpu, mirror=mirror)
     assert result.returncode == 0, result.stdout + result.stderr
     torch_install = next(args for args in commands if "torch>=2.4.0" in args)
@@ -87,6 +88,7 @@ def test_torch_backend_index_is_unambiguous(tmp_path, gpu, mirror):
 
 
 def test_install_failure_stops_before_model_preparation(tmp_path):
+    """A failed dependency install must stop before download or success reporting."""
     result, commands = run_setup(tmp_path, gpu=False, mirror=False, fail_install=True)
     assert result.returncode == 17
     assert ["-m", "lama_inpaint", "download"] not in commands

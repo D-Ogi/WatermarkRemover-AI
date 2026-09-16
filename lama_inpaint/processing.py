@@ -19,6 +19,7 @@ class InpaintProcessor:
     """
 
     def __init__(self, predictor, *, crop_trigger=800, crop_margin=64):
+        """Bind an RGB predictor and validate the positive crop trigger and margin."""
         if not isinstance(crop_trigger, int) or crop_trigger < 1:
             raise ValueError("crop_trigger must be a positive integer")
         if not isinstance(crop_margin, int) or crop_margin < 1:
@@ -28,6 +29,7 @@ class InpaintProcessor:
         self.crop_margin = crop_margin
 
     def __call__(self, image, mask):
+        """Validate RGB/mask arrays and return a new BGR composite without input mutation."""
         if (
             not isinstance(image, np.ndarray)
             or image.dtype != np.uint8
@@ -65,6 +67,7 @@ class InpaintProcessor:
 
     def _bounds(self, start, length, limit):
         # Preserve IOPaint's centered crop sizing, including odd-sized boxes.
+        """Return a clipped context interval, preserving legacy odd-box centering."""
         center = (2 * start + length) // 2
         half = (length + 2 * self.crop_margin) // 2
         lower, upper = center - half, center + half
@@ -76,6 +79,7 @@ class InpaintProcessor:
         return max(left, 0), min(right, limit)
 
     def _forward(self, image, mask):
+        """Symmetrically pad one crop, predict RGB, and composite its original-size BGR result."""
         height, width = mask.shape
         # Reflection padding inside the network needs more than a single feature
         # pixel after downsampling. Keep tiny inputs safe without resizing them.

@@ -11,6 +11,7 @@ class LamaInpaint(InpaintProcessor):
     """Load verified LaMA on CPU/CUDA and preserve the application's BGR API."""
 
     def __init__(self, device="cpu", *, cache_dir=None, download=True):
+        """Verify the pinned artifact and load an evaluation-only CPU or CUDA model."""
         self.device = torch.device(device)
         if self.device.type not in {"cpu", "cuda"}:
             raise ValueError(
@@ -34,6 +35,7 @@ class LamaInpaint(InpaintProcessor):
 
     @torch.inference_mode()
     def _predict(self, image, mask):
+        """Run normalized NCHW tensors and validate finite RGB output before quantization."""
         rgb = np.ascontiguousarray(image.transpose(2, 0, 1), dtype=np.float32) / 255.0
         selected = np.ascontiguousarray(mask[None] > 0, dtype=np.int64)
         result = self.model(

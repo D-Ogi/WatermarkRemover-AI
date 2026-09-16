@@ -119,6 +119,7 @@ def detect_only(image: MatLike, model: Florence2ForConditionalGeneration, proces
     return results
 
 def process_image_with_lama(image: MatLike, mask: MatLike, model_manager: LamaInpaint):
+    """Return the shared LaMA adapter result as a uint8 BGR image."""
     result = model_manager(image, mask)
 
     if result.dtype in [np.float64, np.float32]:

@@ -28,7 +28,15 @@ For a headless CLI installation, use `requirements-core.txt` instead. Select a
 matching torch/torchvision build for your device before installing requirements;
 the generic manifest does not guarantee a CUDA build. Linux desktop installation
 uses pywebview's Qt extra, Windows keeps its native backend, and macOS keeps its
-native backend. Linux still needs a graphical session and the Qt system libraries.
+native backend. Linux still needs a graphical session and the Qt system libraries. On Ubuntu
+24.04, prepare the desktop libraries with:
+
+```sh
+sudo apt-get install libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 libxcb-randr0 libnss3 libasound2t64
+```
+
+Package names may differ on other distributions. The installer does not silently
+install system packages or elevate privileges.
 
 The standalone runtime removes the IOPaint `imghdr` import path. This does not by
 itself certify every dependency or installer on Python 3.13+. The application CI

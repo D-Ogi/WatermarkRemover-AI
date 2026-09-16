@@ -36,7 +36,7 @@ jobs:
       - name: Check Python correctness
         run: python -m ruff check .
       - name: Compile application and tests without importing models
-        run: python -m compileall -q remwm.py remwmgui.py utils.py lama_inpaint tests
+        run: python -m compileall -q remwm.py remwmgui.py desktop_main.py desktop_runtime.py desktop_models.py model_assets.py utils.py lama_inpaint scripts tests
       - name: Run CPU tests
         run: python -m pytest
       - name: Check Bash syntax
@@ -99,7 +99,30 @@ jobs:
           sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 libxcb-randr0 libnss3 libasound2t64
       - name: Check installed desktop backend (Linux)
         if: runner.os == 'Linux'
-        run: xvfb-run -a python scripts/check_webview.py
+        run: xvfb-run -a python scripts/check_desktop.py
       - name: Check installed desktop backend (Windows/macOS)
         if: runner.os != 'Linux'
-        run: python scripts/check_webview.py
+        run: python scripts/check_desktop.py
+
+  windows-portable:
+    name: Windows portable executable
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build independent embedded runtime and executable
+        run: python scripts/build_windows.py --output "${{ runner.temp }}/portable" --cache "${{ runner.temp }}/downloads" --backend cpu --skip-archive
+      - name: Exercise the executable and real offline desktop page
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $bundle = Join-Path '${{ runner.temp }}/portable' "WatermarkRemover-AI-$version-windows-x64-cpu"
+          $process = Start-Process -FilePath (Join-Path $bundle 'WatermarkRemover-AI.exe') -ArgumentList '--check' -WindowStyle Hidden -PassThru
+          $handle = $process.Handle
+          if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Portable check timed out' }
+          if ($process.ExitCode -ne 0) { throw "Portable check failed: $($process.ExitCode)" }

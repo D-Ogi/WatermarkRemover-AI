@@ -1,7 +1,8 @@
 -r requirements-core.txt
 
 # Desktop UI. Linux needs a concrete backend; Qt wheels avoid a GTK source build.
-pywebview>=6.2.1; sys_platform != "linux"
+pywebview>=6.2.1; sys_platform == "darwin"
+pywebview[pyside6]>=6.2.1; sys_platform == "win32"
 pywebview[qt]>=6.2.1; sys_platform == "linux"
 psutil
 pyyaml

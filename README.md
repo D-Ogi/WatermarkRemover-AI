@@ -41,6 +41,12 @@ https://github.com/user-attachments/assets/505be2a8-8eda-4def-90b6-5a4ceefee456
 
 ---
 
+## Windows portable release
+
+The versioned Windows package includes an `.exe` launcher, Python and the desktop
+runtime. See [portable setup, model downloads and troubleshooting](docs/windows-portable.md).
+The first launch prepares verified models with visible progress and a retry button.
+
 ## Installation
 
 ### Windows

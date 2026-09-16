@@ -26,3 +26,6 @@
 *.pth binary
 *.ckpt binary
 *.safetensors binary
+
+# Preserve pinned vendor bytes, including upstream license formatting.
+ui/vendor/** -text -whitespace

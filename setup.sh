@@ -11,7 +11,7 @@ echo ""
 # China mirror configuration
 CHINA_MODE=0
 PIP_MIRROR=""
-HF_ENDPOINT=""
+HF_ENDPOINT="https://huggingface.co"
 
 # Check if user is in China (for mirror selection)
 echo "  [?] Are you in China? (y/n)"
@@ -120,10 +120,8 @@ python -m lama_inpaint download
 echo "  [*] Downloading Florence-2 model (~1.5GB)..."
 if [ "$CHINA_MODE" == "1" ]; then
     echo "      Using HF-Mirror for faster download in China"
-    HF_ENDPOINT="$HF_ENDPOINT" python -c "import os; os.environ['HF_ENDPOINT']='$HF_ENDPOINT'; from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)" || echo "  [!] Florence-2 download failed, will retry on first use"
-else
-    python -c "from huggingface_hub import snapshot_download; snapshot_download('florence-community/Florence-2-large', local_dir_use_symlinks=False)" || echo "  [!] Florence-2 download failed, will retry on first use"
 fi
+python -m model_assets --florence-only --endpoint "$HF_ENDPOINT" || echo "  [!] Florence-2 download failed, open Models in the application and choose Download / Retry"
 
 echo ""
 echo "  ============================================="

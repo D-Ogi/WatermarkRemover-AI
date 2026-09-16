@@ -1,0 +1,55 @@
+name: Windows portable packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Portable (${{ matrix.backend }})
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        backend: [cpu, cu126]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Validate release tag
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          if ($env:GITHUB_REF_TYPE -eq 'tag' -and $env:GITHUB_REF_NAME -ne "v$version") { throw 'Tag must match VERSION' }
+      - name: Build folder and archive
+        run: python scripts/build_windows.py --output dist --cache "${{ runner.temp }}/downloads" --backend ${{ matrix.backend }}
+      - name: Verify executable and local GUI
+        shell: pwsh
+        run: |
+          $version = (Get-Content VERSION -Raw).Trim()
+          $name = "WatermarkRemover-AI-$version-windows-x64-${{ matrix.backend }}"
+          $destination = Join-Path $env:RUNNER_TEMP 'extracted portable'
+          python -m zipfile -e "dist/$name.zip" "$destination"
+          if ($LASTEXITCODE -ne 0) { throw 'Archive extraction failed' }
+          $bundle = Join-Path $destination $name
+          $process = Start-Process -FilePath (Join-Path $bundle 'WatermarkRemover-AI.exe') -ArgumentList '--check' -WindowStyle Hidden -PassThru
+          $handle = $process.Handle
+          if (-not $process.WaitForExit(120000)) { $process.Kill(); throw 'Portable check timed out' }
+          if ($process.ExitCode -ne 0) { throw "Portable check failed: $($process.ExitCode)" }
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: windows-${{ matrix.backend }}
+          path: |
+            dist/*.zip
+            dist/*.sha256
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 14

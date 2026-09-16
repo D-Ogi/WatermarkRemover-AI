@@ -77,8 +77,8 @@ def test_torch_backend_index_is_unambiguous(tmp_path, gpu, mirror):
     """Verify CPU/CUDA index selection independently of the general package mirror."""
     result, commands = run_setup(tmp_path, gpu=gpu, mirror=mirror)
     assert result.returncode == 0, result.stdout + result.stderr
-    torch_install = next(args for args in commands if "torch>=2.4.0" in args)
-    expected = "https://download.pytorch.org/whl/" + ("cu124" if gpu else "cpu")
+    torch_install = next(args for args in commands if "torch>=2.14.0" in args)
+    expected = "https://download.pytorch.org/whl/" + ("cu126" if gpu else "cpu")
     assert torch_install[torch_install.index("--index-url") + 1] == expected
     assert "--isolated" in torch_install
     assert "--extra-index-url" not in torch_install

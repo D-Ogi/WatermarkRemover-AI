@@ -24,7 +24,7 @@ def run_setup(tmp_path, *, gpu, mirror, fail_install=False):
     bindir.mkdir()
     program = tmp_path / "fake_python.py"
     program.write_text(
-        """import json, os, sys
+        r"""import json, os, sys
 from pathlib import Path
 args = sys.argv[1:]
 with open(os.environ['WMR_TEST_LOG'], 'a') as log:

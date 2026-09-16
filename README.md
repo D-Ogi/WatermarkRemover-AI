@@ -162,3 +162,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 [![Star History Chart](https://api.star-history.com/svg?repos=D-Ogi/WatermarkRemover-AI&type=date&legend=top-left)](https://www.star-history.com/#D-Ogi/WatermarkRemover-AI&type=date&legend=top-left)
 
 
+
+## LaMA runtime and installation troubleshooting
+
+LaMA inpainting runs directly from verified TorchScript weights; IOPaint is no
+longer required. See [runtime, cache and migration instructions](docs/lama-runtime.md)
+when upgrading an older installation. Use a fresh application environment and check
+it with `python -m pip check` to avoid retaining old IOPaint dependency conflicts.

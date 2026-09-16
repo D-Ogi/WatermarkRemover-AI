@@ -46,3 +46,9 @@ GPU/model integration tests require a separate trusted environment and must not 
 Automated review provides suggestions; maintainers verify findings against the code and test evidence. A bot's approval does not replace application testing. Resolve applicable review findings or explain why they do not apply. Maintainers decide when to merge.
 
 Once the new CI jobs have passed reliably, maintainers can require their status checks through repository rules. Adding this workflow alone does not enable branch protection. Full installation and GUI automation remain follow-up work while the application's dependency and backend setup issues are being resolved.
+
+## Dependency updates
+
+Dependabot checks Python requirements and GitHub Actions weekly on Monday at 09:00 Europe/Warsaw. It can open up to five Python version-update PRs and three Actions version-update PRs at a time. Minor and patch updates for pytest and Ruff are grouped; application libraries and major tool updates remain separate for review.
+
+The configuration takes effect after it reaches the default branch. It does not enable automatic merging or replace installation and inference checks. Dependabot reads supported dependency manifests; package versions embedded in setup scripts still need manual review. Existing dependency conflicts may prevent updates from resolving and should be fixed rather than bypassed.

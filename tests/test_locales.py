@@ -35,5 +35,6 @@ def test_registered_locale_preserves_ui_contract(language):
 
 
 def test_language_ids_are_unique():
+    """Each menu entry must select a distinct language resource."""
     ids = [item["id"] for item in CONFIG["languages"]]
     assert len(ids) == len(set(ids))

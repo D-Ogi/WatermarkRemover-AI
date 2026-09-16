@@ -1,6 +1,6 @@
 # Lightweight CPU suite; does not install the application or model backends.
 pytest==9.1.1
 ruff==0.16.7
-numpy==2.4.6
+numpy==2.5.3
 Pillow==12.3.0
 matplotlib==3.10.8

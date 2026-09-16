@@ -38,6 +38,7 @@ def test_watchdog_leaves_user_configuration_untouched(monkeypatch, tmp_path):
         assert error.value.code == 1
         assert user_config.read_bytes() == original
         assert temporary_paths
+        assert not temporary_paths[0].parent.exists()
     finally:
         for probe in temporary_paths:
             probe.unlink(missing_ok=True)

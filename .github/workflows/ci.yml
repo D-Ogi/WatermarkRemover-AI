@@ -92,6 +92,11 @@ jobs:
           python remwm.py --help
       - name: Exercise application and TorchScript adapter without model downloads
         run: python -m pytest
+      - name: Install Linux desktop system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 libxcb-randr0 libnss3 libasound2t64
       - name: Check installed desktop backend (Linux)
         if: runner.os == 'Linux'
         run: xvfb-run -a python scripts/check_webview.py

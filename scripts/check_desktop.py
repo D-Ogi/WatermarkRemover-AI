@@ -34,6 +34,8 @@ def check_theme_layout(window, width, height):
         motion.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';
         document.head.appendChild(motion);
         const originalGpu = app.systemInfo.gpu, originalStatus = app.models.status;
+        const originalModelsOpen = app.modelsOpen;
+        app.modelsOpen = true;
         app.systemInfo.gpu = 'NVIDIA GeForce RTX 4090 Laptop GPU';
         app.models.status = 'downloading';
         for (const language of app.availableLanguages) {
@@ -44,6 +46,9 @@ def check_theme_layout(window, width, height):
                 const aside = document.querySelector('aside');
                 void aside.offsetWidth;
                 await document.fonts.ready;
+                // WebKit can defer descendant style updates in a hidden dialog.
+                // Exercise its visible state and let both layout and paint settle.
+                await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
                 const bounds = aside.getBoundingClientRect();
                 const outside = [...aside.querySelectorAll('button, input, select')]
                     .filter(node => node.getClientRects().length)
@@ -112,6 +117,7 @@ def check_theme_layout(window, width, height):
         }
         app.systemInfo.gpu = originalGpu;
         app.models.status = originalStatus;
+        app.modelsOpen = originalModelsOpen;
         motion.remove();
         return rows;
     })().then(rows => { window.sidebarProbe = {rows}; })

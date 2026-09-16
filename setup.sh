@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -e
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
 echo ""
 echo "  ============================================="
@@ -83,74 +84,37 @@ echo "  [*] Installing PyTorch..."
 if [ "$OS_TYPE" == "macos" ]; then
     # macOS: Install from main PyPI (supports MPS on Apple Silicon)
     if [ "$CHINA_MODE" == "1" ]; then
-        pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir $PIP_MIRROR -q
+        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir $PIP_MIRROR -q
     else
-        pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
+        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir -q
     fi
     echo "  [OK] PyTorch installed (MPS support on Apple Silicon)"
 else
-    # Linux: Try CUDA first, fallback to CPU
+    # Select one wheel index; mixing PyPI/mirrors can silently choose a CPU build.
     if command -v nvidia-smi &> /dev/null; then
         echo "  [*] NVIDIA GPU detected, installing CUDA version..."
-        if [ "$CHINA_MODE" == "1" ]; then
-            pip install torch>=2.4.0 torchvision>=0.19.0 --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir $PIP_MIRROR -q
-        else
-            pip install torch>=2.4.0 torchvision>=0.19.0 --extra-index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
-        fi
+        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
         echo "  [OK] PyTorch installed (CUDA 12.4)"
     else
         echo "  [*] No NVIDIA GPU detected, installing CPU version..."
-        if [ "$CHINA_MODE" == "1" ]; then
-            pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir $PIP_MIRROR -q
-        else
-            pip install torch>=2.4.0 torchvision>=0.19.0 --no-cache-dir -q
-        fi
+        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
         echo "  [OK] PyTorch installed (CPU)"
     fi
 fi
 
-# Install other dependencies (without torch lines)
-echo "  [*] Installing other dependencies..."
-if [ "$CHINA_MODE" == "1" ]; then
-    pip install transformers>=4.50.0 diffusers>=0.30.0 "numpy<2" --no-cache-dir $PIP_MIRROR -q
-    pip install "opencv-python-headless>=4.8.0,<4.12.0" "Pillow>=10.0.0" --no-cache-dir $PIP_MIRROR -q
-    pip install pywebview>=4.0 --no-cache-dir $PIP_MIRROR -q
-    pip install loguru click tqdm psutil pyyaml --no-cache-dir $PIP_MIRROR -q
-else
-    pip install transformers>=4.50.0 diffusers>=0.30.0 "numpy<2" --no-cache-dir -q
-    pip install "opencv-python-headless>=4.8.0,<4.12.0" "Pillow>=10.0.0" --no-cache-dir -q
-    pip install pywebview>=4.0 --no-cache-dir -q
-    pip install loguru click tqdm psutil pyyaml --no-cache-dir -q
-fi
+# Use the same dependency manifest as the Windows installers and manual installs.
+echo "  [*] Installing application dependencies..."
+python -m pip install -r requirements.txt --no-cache-dir $PIP_MIRROR
+python -m pip check
+python -c "import remwm; import webview; import yaml; import psutil"
+echo "  [OK] Dependencies installed and verified"
 
-# Install iopaint separately (no deps to avoid conflicts)
-echo "  [*] Installing iopaint..."
+# Shared checksum-verified, atomic download; failure must not look like success.
+echo "  [*] Preparing LaMA model (~196MB)..."
 if [ "$CHINA_MODE" == "1" ]; then
-    pip install iopaint --no-deps --no-cache-dir $PIP_MIRROR -q
-else
-    pip install iopaint --no-deps --no-cache-dir -q
+    echo "      If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks"
 fi
-
-# Install iopaint's required dependencies manually (subset needed for LaMA inpainting)
-echo "  [*] Installing iopaint dependencies..."
-if [ "$CHINA_MODE" == "1" ]; then
-    pip install pydantic typer einops omegaconf easydict yacs --no-cache-dir $PIP_MIRROR -q
-else
-    pip install pydantic typer einops omegaconf easydict yacs --no-cache-dir -q
-fi
-echo "  [OK] Dependencies installed"
-
-# Download LaMA model directly from GitHub (avoids iopaint CLI dependency on fastapi)
-echo "  [*] Downloading LaMA model (~196MB)..."
-LAMA_DIR="$HOME/.cache/torch/hub/checkpoints"
-LAMA_FILE="$LAMA_DIR/big-lama.pt"
-if [ ! -f "$LAMA_FILE" ]; then
-    mkdir -p "$LAMA_DIR"
-    curl -L -o "$LAMA_FILE" "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt" || echo "  [!] LaMA download failed, will retry on first use"
-    echo "  [OK] LaMA model downloaded"
-else
-    echo "  [OK] LaMA model already exists"
-fi
+python -m lama_inpaint download
 
 # Download Florence-2 model
 echo "  [*] Downloading Florence-2 model (~1.5GB)..."

@@ -84,20 +84,20 @@ echo "  [*] Installing PyTorch..."
 if [ "$OS_TYPE" == "macos" ]; then
     # macOS: Install from main PyPI (supports MPS on Apple Silicon)
     if [ "$CHINA_MODE" == "1" ]; then
-        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir $PIP_MIRROR -q
+        pip install "torch>=2.14.0" "torchvision>=0.29.0" --no-cache-dir $PIP_MIRROR -q
     else
-        pip install "torch>=2.4.0" "torchvision>=0.19.0" --no-cache-dir -q
+        pip install "torch>=2.14.0" "torchvision>=0.29.0" --no-cache-dir -q
     fi
     echo "  [OK] PyTorch installed (MPS support on Apple Silicon)"
 else
     # Select one wheel index; mixing PyPI/mirrors can silently choose a CPU build.
     if command -v nvidia-smi &> /dev/null; then
         echo "  [*] NVIDIA GPU detected, installing CUDA version..."
-        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cu124 --no-cache-dir -q
-        echo "  [OK] PyTorch installed (CUDA 12.4)"
+        python -m pip --isolated install "torch>=2.14.0" "torchvision>=0.29.0" --index-url https://download.pytorch.org/whl/cu126 --no-cache-dir -q
+        echo "  [OK] PyTorch installed (CUDA 12.6)"
     else
         echo "  [*] No NVIDIA GPU detected, installing CPU version..."
-        python -m pip --isolated install "torch>=2.4.0" "torchvision>=0.19.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
+        python -m pip --isolated install "torch>=2.14.0" "torchvision>=0.29.0" --index-url https://download.pytorch.org/whl/cpu --no-cache-dir -q
         echo "  [OK] PyTorch installed (CPU)"
     fi
 fi

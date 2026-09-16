@@ -114,7 +114,7 @@ echo "  [*] Preparing LaMA model (~196MB)..."
 if [ "$CHINA_MODE" == "1" ]; then
     echo "      If GitHub is blocked, preseed the verified cache: docs/lama-runtime.md#restricted-networks"
 fi
-python -m lama_inpaint download
+python -m lama_inpaint download --verbose
 
 # Download Florence-2 model
 echo "  [*] Downloading Florence-2 model (~1.5GB)..."

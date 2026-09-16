@@ -10,6 +10,13 @@ import pytest
 from lama_inpaint import model_store as store
 
 
+class Response(io.BytesIO):
+    """A controlled successful HTTP response with an optional header mapping."""
+
+    status = 200
+    headers = {}
+
+
 @pytest.fixture
 def artifact(monkeypatch):
     """Pin verification to tiny controlled bytes so download tests need no real weights."""
@@ -27,7 +34,7 @@ def test_download_then_offline_cache_reuse(tmp_path, monkeypatch, artifact):
         """Record a network attempt and supply the controlled artifact bytes."""
         assert url == store.MODEL_URL and timeout == 30
         calls.append(url)
-        return io.BytesIO(artifact)
+        return Response(artifact)
 
     monkeypatch.setattr(store, "urlopen", response)
     target = store.ensure_model(tmp_path)
@@ -40,12 +47,12 @@ def test_download_then_offline_cache_reuse(tmp_path, monkeypatch, artifact):
 
 @pytest.mark.parametrize("bad", [b"", b"truncated", b"x" * 200])
 def test_bad_download_never_published(tmp_path, monkeypatch, artifact, bad):
-    """Reject missing, truncated or oversized transfers without leaving a cache artifact."""
-    monkeypatch.setattr(store, "urlopen", lambda *a, **k: io.BytesIO(bad))
+    """Reject bad transfers without publishing them, while retaining resumable data."""
+    monkeypatch.setattr(store, "urlopen", lambda *a, **k: Response(bad))
     with pytest.raises(store.ModelError):
         store.ensure_model(tmp_path)
     assert not (tmp_path / store.MODEL_NAME).exists()
-    assert not list(tmp_path.glob("*.part"))
+    assert (tmp_path / f".{store.MODEL_NAME}.part").exists()
 
 
 def test_same_size_tampering_rejected_offline(tmp_path, artifact):
@@ -68,11 +75,11 @@ def test_missing_offline_model_does_not_connect(tmp_path, monkeypatch, artifact)
 
 
 def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact):
-    """Keep the old artifact and remove temporary data after a connection interruption."""
+    """Keep the old artifact and resumable data after a connection interruption."""
     old = tmp_path / store.MODEL_NAME
     old.write_bytes(b"old invalid file")
 
-    class Interrupted(io.BytesIO):
+    class Interrupted(Response):
         def read(self, size=-1):
             """Supply one partial chunk, then simulate an interrupted connection."""
             if self.tell():
@@ -83,7 +90,26 @@ def test_interrupted_download_preserves_old_file(tmp_path, monkeypatch, artifact
     with pytest.raises(store.ModelError, match="interrupted"):
         store.ensure_model(tmp_path)
     assert old.read_bytes() == b"old invalid file"
-    assert not list(tmp_path.glob("*.part"))
+    assert (tmp_path / f".{store.MODEL_NAME}.part").read_bytes() == artifact[:5]
+
+
+def test_interrupted_download_resumes_with_http_range(tmp_path, monkeypatch, artifact):
+    """Resume a retained partial artifact instead of downloading it from zero."""
+    partial = tmp_path / f".{store.MODEL_NAME}.part"
+    partial.write_bytes(artifact[:5])
+
+    class Resumed(Response):
+        status = 206
+        headers = {"Content-Range": f"bytes 5-{len(artifact) - 1}/{len(artifact)}"}
+
+    def response(request, timeout):
+        assert request.headers["Range"] == "bytes=5-"
+        return Resumed(artifact[5:])
+
+    monkeypatch.setattr(store, "urlopen", response)
+    target = store.ensure_model(tmp_path)
+    assert target.read_bytes() == artifact
+    assert not partial.exists()
 
 
 def test_corrupt_cache_replaced_only_after_verification(
@@ -92,7 +118,7 @@ def test_corrupt_cache_replaced_only_after_verification(
     """Replace an invalid existing artifact only with the complete verified fixture."""
     target = tmp_path / store.MODEL_NAME
     target.write_bytes(b"bad")
-    monkeypatch.setattr(store, "urlopen", lambda *a, **k: io.BytesIO(artifact))
+    monkeypatch.setattr(store, "urlopen", lambda *a, **k: Response(artifact))
     assert store.ensure_model(tmp_path).read_bytes() == artifact
 
 
@@ -103,7 +129,7 @@ def test_concurrent_downloads_share_verified_artifact(tmp_path, monkeypatch, art
     def response(*a, **k):
         """Record a network attempt and supply the controlled artifact bytes."""
         calls.append(1)
-        return io.BytesIO(artifact)
+        return Response(artifact)
 
     monkeypatch.setattr(store, "urlopen", response)
     with ThreadPoolExecutor(max_workers=4) as pool:
@@ -123,7 +149,7 @@ def test_torch_cache_environment(monkeypatch, tmp_path):
 
 def test_verification_rewinds_stream(artifact):
     """Leave a verified open stream ready for deserialization from its beginning."""
-    stream = io.BytesIO(artifact)
+    stream = Response(artifact)
     stream.seek(4)
     store.verify_stream(stream)
     assert stream.tell() == 0

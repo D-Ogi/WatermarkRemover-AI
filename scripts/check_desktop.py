@@ -27,6 +27,11 @@ failures = []
 def check_theme_layout(window, width, height):
     """Measure controls, tooltips and status-bar bounds across themes and languages."""
     window.resize(width, height)
+    window.evaluate_js("window.appInstance.modelsOpen = true")
+    deadline = time.monotonic() + 10
+    while not window.evaluate_js("document.querySelector('.model-dialog').getBoundingClientRect().height > 0"):
+        assert time.monotonic() < deadline, "Model dialog did not become visible"
+        time.sleep(.05)
     window.evaluate_js("""window.sidebarProbe = null; (async () => {
         const app = window.appInstance, rows = [];
         // Measure final theme styles, not an intermediate animated color.
@@ -34,8 +39,6 @@ def check_theme_layout(window, width, height):
         motion.textContent = '*, *::before, *::after { transition: none !important; animation: none !important; }';
         document.head.appendChild(motion);
         const originalGpu = app.systemInfo.gpu, originalStatus = app.models.status;
-        const originalModelsOpen = app.modelsOpen;
-        app.modelsOpen = true;
         app.systemInfo.gpu = 'NVIDIA GeForce RTX 4090 Laptop GPU';
         app.models.status = 'downloading';
         for (const language of app.availableLanguages) {
@@ -113,14 +116,13 @@ def check_theme_layout(window, width, height):
                         button: buttonBounds.toJSON(), gpu: gpuBounds.toJSON(), overlap,
                         scroll: footer.scrollWidth, client: footer.clientWidth},
                     contrast: Math.min(...textContrast, ...buttonContrast),
-                    modelColors: {background, textStyles},
+                    modelColors: {background, textStyles, isOpen: app.modelsOpen, display: getComputedStyle(panel.parentElement).display},
                     client: aside.clientWidth, scroll: aside.scrollWidth,
                     outside, hintsInside: hints.every(Boolean)});
             }
         }
         app.systemInfo.gpu = originalGpu;
         app.models.status = originalStatus;
-        app.modelsOpen = originalModelsOpen;
         motion.remove();
         return rows;
     })().then(rows => { window.sidebarProbe = {rows}; })
@@ -138,7 +140,7 @@ def check_theme_layout(window, width, height):
     for row in results:
         assert row['scroll'] <= row['client'] + 1, row
         assert not row['outside'] and row['hintsInside'], row
-        assert row['contrast'] >= 4.5, row
+        assert row['contrast'] is not None and row['contrast'] >= 4.5, row
         assert row['statusVisible'], row
     print('THEME PASS', f'{width}x{height}', len(results), 'theme/language combinations; minimum model-panel contrast',
           round(min(row['contrast'] for row in results), 2), flush=True)

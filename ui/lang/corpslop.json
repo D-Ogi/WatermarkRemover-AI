@@ -1,0 +1,128 @@
+{
+  "app": {
+    "title": "Watermark Remover — CorpSlop™"
+  },
+  "modes": {
+    "label": "Choose your meal deal",
+    "single": "Single serving",
+    "single_tooltip": "One image or video. The loneliness surcharge is imaginary.",
+    "batch": "Family bucket",
+    "batch_tooltip": "Process a whole folder. Finally, bulk consumption with an actual purpose."
+  },
+  "settings": {
+    "gaslight": {
+      "label": "Rebrand old outputs",
+      "sublabel": "(overwrite files)",
+      "tooltip": "Overwrite existing output files instead of skipping them. Same filename, fresh corporate apology."
+    },
+    "ghost": {
+      "label": "Sell them nothing 👻",
+      "sublabel": "(transparent / LoRA)",
+      "tooltip": "Make the watermark area transparent instead of filling it. PNG/WEBP only; enable alpha masking in your LoRA trainer. Air: now a premium feature."
+    },
+    "sigma_detect": {
+      "label": "Maximum slop size (%)",
+      "tooltip": "Detections above this percentage of the image are skipped. Your logo is not entitled to the entire screen."
+    },
+    "detection_prompt": {
+      "label": "Name the branded crap",
+      "placeholder": "watermark",
+      "tooltip": "Try watermark, logo, text or signature. The algorithm does not accept a brand strategy deck."
+    },
+    "output_format": {
+      "label": "Takeaway container",
+      "tooltip": "Pick an output format. Auto preserves the original. The packaging is not the product, Karen from Marketing.",
+      "auto": "Auto (Original recipe)",
+      "png": "PNG (No added loss)",
+      "jpg": "JPG (Budget bucket)",
+      "webp": "WEBP (New packaging)",
+      "mp4": "MP4 (Moving slop)",
+      "avi": "AVI (Vintage slop)"
+    }
+  },
+  "video_settings": {
+    "title": "Content-farm settings",
+    "detection_skip": {
+      "label": "Attention-span tax",
+      "unit": "frames",
+      "hint": "Skip more frames for speed; brief watermarks may be missed. Efficiency has a catch. Shocking."
+    },
+    "fade_in": {
+      "label": "Pre-roll buffer",
+      "hint": "Extend removal backward for fading-in watermarks. Not an unskippable sponsor segment."
+    },
+    "fade_out": {
+      "label": "Post-roll buffer",
+      "hint": "Extend removal forward for fading-out watermarks. End the brand engagement already."
+    }
+  },
+  "buttons": {
+    "preview": "🔍 Inspect the slop",
+    "preview_tooltip": "See detection boxes before processing. The serving suggestion is actual data.",
+    "preview_loading": "🔄 Reading the label…",
+    "start": "Deep-fry the branding",
+    "start_processing": "Cooking the pixels…",
+    "stop": "Cancel the order",
+    "browse": "Browse",
+    "try_again": "🔄 Reheat it",
+    "close": "No upsell, thanks",
+    "copy_error": "📋 Copy the complaint"
+  },
+  "dropzone": {
+    "title": "Feed the content mill",
+    "subtitle": "Drop files or click. No loyalty account, you lucky bastard.",
+    "video_hint": "Video meal deal. Click to change.",
+    "image_hint": "Single image serving. Click to change."
+  },
+  "output": {
+    "placeholder": "Takeaway counter / output folder…"
+  },
+  "status_bar": {
+    "cuda": "Deep fryer (CUDA)",
+    "ffmpeg": "Sound seasoning",
+    "ram": "Slop capacity",
+    "on": "HOT",
+    "off": "COLD",
+    "cpu_mode": "Hand-stirred CPU"
+  },
+  "preview_modal": {
+    "title": "Ingredient inspection",
+    "prompt": "Ingredient:",
+    "detected": "Found:",
+    "source": "Original serving:",
+    "regions": "regions",
+    "bounding_boxes": "Detection boxes:",
+    "of_image": "% of image",
+    "too_large": "(oversized; skipped)",
+    "loading": "Checking the ingredients…",
+    "loading_hint": "Loading prepared models. First-time downloads are in the Models panel."
+  },
+  "marquee": "NOW WITH 40% MORE BRAND ENGAGEMENT /// YOUR ATTENTION IS THE PRODUCT /// SUBSCRIBE TO UNSUBSCRIBE /// HANDCRAFTED BY A COMMITTEE THAT HATES YOU ///",
+  "processing_status": [
+    "Locating the sponsored crap…",
+    "Removing the brand activation…",
+    "Asking Legal to leave the room…",
+    "Reconstructing pixels, not shareholder value…",
+    "Declining the newsletter for the ninth time…",
+    "Generating results, not a subscription funnel…",
+    "Preparing your artisanal algorithmic leftovers…",
+    "Nearly done. No tip screen."
+  ],
+  "logs": {
+    "init": "The content mill is open. Your soul remains locally stored.",
+    "starting": "Order received. Processing files, not your payment details.",
+    "first_run_hint": "Prepare missing models in the Models panel. The download is not a subscription.",
+    "done": "Order ready. Output files created successfully. Eat shit, brand watermark.",
+    "stopped": "Order cancelled by the user. No retention department called.",
+    "no_input": "Empty tray. Choose an input file first.",
+    "ghost_video_warning": "Transparent mode cannot process video; disabling it. Air sandwiches are image-only.",
+    "no_ffmpeg": "FFmpeg is missing. Output video will have no audio seasoning.",
+    "api_error": "The API is unavailable. Launch the app or use run.bat/run.sh; shouting at the cashier will not help.",
+    "preview_failed": "Inspection failed:",
+    "preview_result": "Found {total} regions; {accepted} are scheduled for removal.",
+    "cooking": "Processing the slop…"
+  },
+  "lang": {
+    "label": "Brand voice"
+  }
+}

@@ -23,7 +23,7 @@ python -m venv .venv-app
 # Windows PowerShell: .venv-app\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python -m pip check
-python -m lama_inpaint download
+python -m lama_inpaint download --verbose
 python remwm.py --help
 ```
 
@@ -54,7 +54,7 @@ An existing valid IOPaint cache is reused without downloading it again. A custom
 `torch.hub.set_dir()` made by unrelated Python code is not consulted.
 
 ```sh
-python -m lama_inpaint download
+python -m lama_inpaint download --verbose
 python -m lama_inpaint download --offline
 python -m lama_inpaint download --cache-dir /path/to/checkpoints
 ```
@@ -67,8 +67,14 @@ can use `LamaInpaint(device="cpu", download=False)` for strict offline loading.
 The artifact URL, exact byte count and SHA-256 are pinned in
 `lama_inpaint/model_store.py`; see [provenance](../THIRD_PARTY_NOTICES.md).
 Cached weights are verified before deserialization. Downloads have read/time/size
-limits, a cross-process lock, a unique temporary file and atomic replacement after
-verification. Interrupted or invalid downloads never become the cached model and
+limits, a cross-process lock, a retained `.big-lama.pt.part` file and atomic
+replacement after verification. Retrying resumes a partial transfer with HTTP
+Range. A server that ignores or rejects Range falls back to a full download.
+Response ranges and declared sizes are checked before changing the partial file.
+A complete partial is verified locally; corrupt or oversized partials are discarded
+on the next attempt. `--verbose` prints bytes, transfer speed, ETA and verification
+status to stderr. Both setup scripts enable this output. Interrupted or invalid
+downloads never become the cached model and
 do not delete an existing artifact. An invalid cache is replaced only after a new
 download passes verification. No user-provided URL or checksum environment variable
 can bypass the pinned artifact check.

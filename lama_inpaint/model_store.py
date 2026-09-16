@@ -4,8 +4,10 @@ import hashlib
 from http.client import HTTPException
 import os
 from pathlib import Path
+import re
 import sys
 import time
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from filelock import FileLock, Timeout
@@ -63,7 +65,7 @@ def _is_valid(path):
 def ensure_model(cache_dir=None, *, download=True, progress=None, verbose=False):
     """Return verified weights, downloading atomically when allowed.
 
-    Downloads use a unique temporary file and a per-artifact cross-process lock.
+    Downloads retain a partial file under a per-artifact cross-process lock.
     A failed transfer never replaces an existing file. Offline mode never opens
     a network connection. The URL and expected digest are deliberately fixed.
     """
@@ -133,11 +135,63 @@ def _response_header(response, name):
     return headers.get(name)
 
 
+def _open_transfer(existing, verbose):
+    """Resume when supported; reuse a full response if the server ignores Range."""
+    if existing:
+        _verbose(verbose, f"Resuming from {_format_bytes(existing)} using HTTP Range...")
+        request = Request(MODEL_URL, headers={"Range": f"bytes={existing}-"})
+        try:
+            response = urlopen(request, timeout=DOWNLOAD_TIMEOUT)
+        except HTTPError as exc:
+            if exc.code != 416:
+                exc.close()
+                raise
+            exc.close()
+            _verbose(verbose, "Server rejected the range; requesting the full artifact.")
+        else:
+            if _response_status(response) == 200:
+                _verbose(verbose, "Server ignored Range; restarting from its full response.")
+                return response, 0
+            return response, existing
+    _verbose(verbose, f"Downloading from {MODEL_URL}")
+    try:
+        return urlopen(MODEL_URL, timeout=DOWNLOAD_TIMEOUT), 0
+    except HTTPError as exc:
+        exc.close()
+        raise
+
+
+def _transfer_size(response, existing):
+    """Validate HTTP framing before opening or truncating the retained partial."""
+    status = _response_status(response)
+    expected = MODEL_SIZE
+    if existing:
+        content_range = _response_header(response, "Content-Range") or ""
+        match = re.fullmatch(r"bytes ([0-9]+)-([0-9]+)/([0-9]+)", content_range)
+        if status != 206 or match is None:
+            raise ModelError("Server returned a missing or invalid download range.")
+        start, end, total = map(int, match.groups())
+        if start != existing or not start <= end < total or total != MODEL_SIZE:
+            raise ModelError("Server returned an unexpected download range.")
+        expected = end - start + 1
+    elif status != 200:
+        raise ModelError(f"Unexpected HTTP status for a full download: {status}.")
+    encoding = _response_header(response, "Content-Encoding")
+    if encoding and encoding.lower() != "identity":
+        raise ModelError("Unexpected content encoding in model download.")
+    length = _response_header(response, "Content-Length")
+    if length is not None and (
+        re.fullmatch(r"[0-9]+", length) is None or int(length) != expected
+    ):
+        raise ModelError("Download Content-Length does not match the expected size.")
+    return expected
+
+
 def _download(target, progress=None, *, verbose=False):
     """Download, resume and verify the model before publishing it atomically."""
     partial = target.with_name(f".{target.name}.part")
     started_at = time.monotonic()
-    last_progress = 0.0
+    progress_line = False
 
     try:
         existing = partial.stat().st_size if partial.exists() else 0
@@ -162,43 +216,7 @@ def _download(target, progress=None, *, verbose=False):
             f"Expected size: {_format_bytes(MODEL_SIZE)}",
         )
 
-        response = None
-        resumed = existing > 0
-        if resumed:
-            _verbose(
-                verbose,
-                f"Resuming from {_format_bytes(existing)} "
-                f"({existing / MODEL_SIZE:.1%}) using HTTP Range...",
-            )
-            request = Request(MODEL_URL, headers={"Range": f"bytes={existing}-"})
-            response = urlopen(request, timeout=DOWNLOAD_TIMEOUT)
-            status = _response_status(response)
-            if status != 206:
-                _verbose(
-                    verbose,
-                    f"Server did not accept resume (HTTP {status or 'unknown'}); "
-                    "restarting the transfer.",
-                )
-                response.close()
-                response = None
-                partial.unlink()
-                existing = 0
-                resumed = False
-
-        if response is None:
-            _verbose(verbose, f"Downloading from {MODEL_URL}")
-            response = urlopen(MODEL_URL, timeout=DOWNLOAD_TIMEOUT)
-
-        content_range = _response_header(response, "Content-Range")
-        if resumed and content_range:
-            expected_prefix = f"bytes {existing}-"
-            if not content_range.startswith(expected_prefix):
-                response.close()
-                raise ModelError(
-                    f"Server returned an unexpected range ({content_range}); "
-                    f"partial file retained at {partial} for retry."
-                )
-
+        response, existing = _open_transfer(existing, verbose)
         mode = "ab" if existing else "wb"
         downloaded = existing
         previous_downloaded = downloaded
@@ -206,11 +224,12 @@ def _download(target, progress=None, *, verbose=False):
         last_progress = 0.0
         _verbose(
             verbose,
-            f"Transfer {'resumed' if resumed else 'started'}; "
+            f"Transfer {'resumed' if existing else 'started'}; "
             "interrupted transfers will retain their progress.",
         )
 
         with response:
+            response_end = existing + _transfer_size(response, existing)
             with partial.open(mode) as output:
                 while True:
                     if time.monotonic() - started_at > DOWNLOAD_DEADLINE:
@@ -219,16 +238,18 @@ def _download(target, progress=None, *, verbose=False):
                             f"{_format_bytes(MODEL_SIZE)}; partial file retained at {partial}."
                         )
                     chunk = response.read(DOWNLOAD_CHUNK_SIZE)
+                    if time.monotonic() - started_at > DOWNLOAD_DEADLINE:
+                        raise ModelError("Download deadline reached; partial file retained for retry.")
                     if not chunk:
                         break
-                    output.write(chunk)
-                    downloaded += len(chunk)
-                    if downloaded > MODEL_SIZE:
+                    if downloaded + len(chunk) > response_end:
                         raise ModelError(
                             f"Download exceeds expected size "
-                            f"({_format_bytes(downloaded)} > {_format_bytes(MODEL_SIZE)}); "
+                            f"({_format_bytes(downloaded + len(chunk))} > {_format_bytes(response_end)}); "
                             f"partial file retained at {partial}."
                         )
+                    output.write(chunk)
+                    downloaded += len(chunk)
                     now = time.monotonic()
                     if verbose and (
                         now - last_progress >= PROGRESS_INTERVAL
@@ -247,6 +268,7 @@ def _download(target, progress=None, *, verbose=False):
                             file=sys.stderr,
                             flush=True,
                         )
+                        progress_line = True
                         last_progress = now
                     if progress:
                         progress(
@@ -260,8 +282,9 @@ def _download(target, progress=None, *, verbose=False):
                 output.flush()
                 os.fsync(output.fileno())
 
-        if verbose:
+        if progress_line:
             print(file=sys.stderr, flush=True)
+            progress_line = False
         if downloaded != MODEL_SIZE:
             raise ModelError(
                 f"Incomplete download: {_format_bytes(downloaded)}/"
@@ -273,10 +296,11 @@ def _download(target, progress=None, *, verbose=False):
             verify_stream(stream)
         os.replace(partial, target)
         _verbose(verbose, f"Model verified and saved to {target}")
-    except ModelError:
-        raise
     except (OSError, ValueError, HTTPException) as exc:
         raise ModelError(
             f"Could not download LaMA: {exc}. "
             f"Partial file retained at {partial}; run the command again."
         ) from exc
+    finally:
+        if progress_line:
+            print(file=sys.stderr, flush=True)

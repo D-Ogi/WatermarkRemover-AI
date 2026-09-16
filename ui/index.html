@@ -277,7 +277,7 @@
         </aside>
 
         <!-- RIGHT CONTENT (Preview & Logs) -->
-        <div class="flex-1 min-w-[400px] flex flex-col relative bg-black/40 backdrop-blur-sm overflow-hidden">
+        <div class="flex-1 min-w-0 flex flex-col relative bg-black/40 backdrop-blur-sm overflow-hidden">
 
             <!-- MARQUEE BAR -->
             <div class="bg-neon-pink text-black font-bold text-xs py-1 overflow-hidden whitespace-nowrap border-b border-neon-pink">
@@ -341,8 +341,8 @@
             </div>
 
             <!-- STATUS BAR -->
-            <div class="bg-black/60 backdrop-blur-md border-t border-white/10 p-2 px-4 flex justify-between items-center text-[10px] font-mono text-gray-500 uppercase">
-                <div class="flex gap-4">
+            <div class="status-bar bg-black/60 backdrop-blur-md border-t border-white/10 p-2 px-4 text-[10px] font-mono text-gray-500 uppercase">
+                <div class="status-details">
                     <span class="flex items-center gap-1">
                         <span class="w-2 h-2 rounded-full" :class="systemInfo.cuda ? 'bg-neon-green' : 'bg-red-500'"></span>
                         <span x-text="t.status_bar?.cuda || 'CUDA'"></span>: <span x-text="systemInfo.cuda ? (t.status_bar?.on || 'ON') : (t.status_bar?.off || 'OFF')"></span>
@@ -353,7 +353,10 @@
                     </span>
                     <span><span x-text="t.status_bar?.ram || 'RAM'"></span>: <span x-text="systemInfo.ram + '%'"></span></span>
                 </div>
-                <div x-text="systemInfo.gpu || (t.status_bar?.cpu_mode || 'CPU Mode')"></div>
+                <div class="status-device" x-text="systemInfo.gpu || (t.status_bar?.cpu_mode || 'CPU Mode')"></div>
+                <button id="models-button" @click="modelsOpen = true" class="glass-panel px-3 py-2 text-xs text-neon-cyan rounded">
+                    Models: <span x-text="models.status"></span>
+                </button>
             </div>
 
             <!-- PROGRESS OVERLAY (Visible when processing) -->
@@ -466,11 +469,6 @@
         </div>
     </main>
 
-    <div class="fixed bottom-3 right-3 z-50">
-        <button id="models-button" @click="modelsOpen = true" class="glass-panel px-3 py-2 text-xs text-neon-cyan rounded">
-            Models: <span x-text="models.status"></span>
-        </button>
-    </div>
     <div x-show="bridgeError" class="fixed top-2 left-2 right-2 z-50 bg-card border border-error p-3 text-sm" x-text="bridgeError"></div>
     <div x-show="modelsOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-6">
         <section class="glass-panel model-dialog w-full max-w-xl p-6 rounded-xl" role="dialog" aria-label="AI models">

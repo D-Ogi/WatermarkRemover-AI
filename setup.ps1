@@ -1,6 +1,8 @@
 # WatermarkRemover-AI Setup Script
 $Host.UI.RawUI.WindowTitle = "WatermarkRemover-AI Setup"
 
+Set-Location -LiteralPath $PSScriptRoot
+
 $PYTHON_VERSION = "3.12.7"
 $PYTHON_DIR = "python"
 $PYTHON_EXE = "$PYTHON_DIR\python.exe"
@@ -104,6 +106,15 @@ else {
     Write-Host "  [OK] Python found" -ForegroundColor Green
 }
 
+# Make local packages importable in fresh and existing embedded runtimes.
+$pthFile = Join-Path $PYTHON_DIR "python312._pth"
+if (Test-Path -LiteralPath $pthFile) {
+    $pthLines = @(Get-Content -LiteralPath $pthFile)
+    if ($pthLines -notcontains "..") {
+        Add-Content -LiteralPath $pthFile -Value "`n.."
+    }
+}
+
 Write-Host ""
 Write-Host "  [*] Installing dependencies..." -ForegroundColor Cyan
 Write-Host "      This takes 5-10 minutes. Chill and learn something!" -ForegroundColor Magenta
@@ -118,14 +129,16 @@ if ($CHINA_MODE) {
     & $PYTHON_EXE -m pip install --upgrade pip setuptools wheel 2>&1 | Out-Null
 }
 
-# Install base deps with tips (legacy resolver to ignore conflicts)
+# Install dependencies with the normal resolver and retain the installation tips.
 if ($CHINA_MODE) {
-    # For China: use Tsinghua mirror, skip PyTorch extra-index-url from requirements.txt
-    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
+    # Use the selected package mirror.
+    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
 } else {
-    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir", "--use-deprecated=legacy-resolver" -NoNewWindow -PassThru
+    $process = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "-r", "requirements.txt", "--no-cache-dir" -NoNewWindow -PassThru
 }
 
+# Retain the native process handle so ExitCode remains available after exit.
+$processHandle = $process.Handle
 $lastTipTime = Get-Date
 $currentTip = Get-Random -Maximum $tips.Count
 
@@ -145,138 +158,29 @@ while (-not $process.HasExited) {
 
 Write-Host "`r                                                                                              "
 
-# Legacy resolver can return non-zero even on success, so verify key packages
-$verifyResult = & $PYTHON_EXE -c "import torch; import transformers; import webview; import cv2; print('OK')" 2>&1
-if ($verifyResult -ne "OK") {
-    if ($process.ExitCode -ne 0) {
-        Write-Host ""
-        Write-Host "  [X] Failed to install dependencies" -ForegroundColor Red
-        Read-Host "  Press Enter to exit"
-        exit 1
-    }
-}
-
-# Install iopaint separately without pulling its deps (we already have ours)
-Write-Host "  [*] Installing iopaint (no deps)..." -ForegroundColor Cyan
-if ($CHINA_MODE) {
-    $iopaintProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "iopaint", "--no-deps", "--no-cache-dir", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
-} else {
-    $iopaintProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "--upgrade", "iopaint", "--no-deps", "--no-cache-dir" -NoNewWindow -PassThru
-}
-$iopaintProcess.WaitForExit()
-
-if ($iopaintProcess.ExitCode -ne 0) {
-    Write-Host ""
-    Write-Host "  [X] Failed to install iopaint" -ForegroundColor Red
-    Read-Host "  Press Enter to exit"
+$process.WaitForExit()
+if ($process.ExitCode -ne 0) {
+    Write-Host "  [X] Failed to install dependencies" -ForegroundColor Red
     exit 1
 }
-Write-Host "  [OK] iopaint installed" -ForegroundColor Green
-
-# Install iopaint's required dependencies manually (subset needed for LaMA inpainting)
-Write-Host "  [*] Installing iopaint dependencies..." -ForegroundColor Cyan
-if ($CHINA_MODE) {
-    $iopaintDepsProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "pydantic", "typer", "einops", "omegaconf", "easydict", "yacs", "--no-cache-dir", "-i", $PIP_INDEX_URL, "--trusted-host", "pypi.tuna.tsinghua.edu.cn" -NoNewWindow -PassThru
-} else {
-    $iopaintDepsProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-m", "pip", "install", "pydantic", "typer", "einops", "omegaconf", "easydict", "yacs", "--no-cache-dir" -NoNewWindow -PassThru
-}
-$iopaintDepsProcess.WaitForExit()
-
-if ($iopaintDepsProcess.ExitCode -ne 0) {
-    Write-Host ""
-    Write-Host "  [X] Failed to install iopaint dependencies" -ForegroundColor Red
-    Read-Host "  Press Enter to exit"
+& $PYTHON_EXE -m pip check
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [X] Dependency verification failed. Use a fresh application environment." -ForegroundColor Red
     exit 1
 }
-
-# Verify iopaint dependencies are properly installed
-Write-Host "  [*] Verifying iopaint dependencies..." -ForegroundColor Cyan
-$verifyIopaint = & $PYTHON_EXE -c "import pydantic; import typer; import einops; import omegaconf; import easydict; import yacs; print('OK')" 2>&1
-if ($verifyIopaint -ne "OK") {
-    Write-Host ""
-    Write-Host "  [X] iopaint dependencies verification failed" -ForegroundColor Red
-    Write-Host "      Missing modules detected. Attempting reinstall..." -ForegroundColor Yellow
-
-    # Try installing one by one to identify issues
-    $deps = @("pydantic", "typer", "einops", "omegaconf", "easydict", "yacs")
-    foreach ($dep in $deps) {
-        if ($CHINA_MODE) {
-            & $PYTHON_EXE -m pip install $dep --no-cache-dir -i $PIP_INDEX_URL --trusted-host pypi.tuna.tsinghua.edu.cn 2>&1 | Out-Null
-        } else {
-            & $PYTHON_EXE -m pip install $dep --no-cache-dir 2>&1 | Out-Null
-        }
-    }
-
-    # Verify again
-    $verifyAgain = & $PYTHON_EXE -c "import pydantic; import typer; import einops; import omegaconf; import easydict; import yacs; print('OK')" 2>&1
-    if ($verifyAgain -ne "OK") {
-        Write-Host "  [X] Could not install iopaint dependencies" -ForegroundColor Red
-        Write-Host "      Please try running: pip install pydantic typer einops omegaconf easydict yacs" -ForegroundColor Yellow
-        Read-Host "  Press Enter to exit"
-        exit 1
-    }
+& $PYTHON_EXE -c "import remwm; import webview; import yaml; import psutil"
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [X] Failed to import application packages" -ForegroundColor Red
+    exit 1
 }
-
 Write-Host "  [OK] Dependencies installed and verified" -ForegroundColor Green
 
-# Download LaMA model directly from GitHub (avoids iopaint CLI dependency on fastapi)
-Write-Host ""
-Write-Host "  [*] Downloading AI model (196MB)..." -ForegroundColor Cyan
-Write-Host ""
-Write-Host "      Did you know?" -ForegroundColor DarkGray
-Write-Host ""
-
-$lamaDir = Join-Path $env:USERPROFILE ".cache\torch\hub\checkpoints"
-$lamaFile = Join-Path $lamaDir "big-lama.pt"
-$lamaUrl = "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt"
-
-if (-not (Test-Path $lamaFile)) {
-    # Create directory if needed
-    if (-not (Test-Path $lamaDir)) {
-        New-Item -ItemType Directory -Path $lamaDir -Force | Out-Null
-    }
-
-    try {
-        # Show tips while downloading
-        $job = Start-Job -ScriptBlock {
-            param($url, $dest)
-            Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
-        } -ArgumentList $lamaUrl, $lamaFile
-
-        $lastTipTime = Get-Date
-        while ($job.State -eq "Running") {
-            $now = Get-Date
-            if (($now - $lastTipTime).TotalSeconds -ge 5) {
-                $tip = $tips[$currentTip]
-                $line = "      $($tip.icon) $($tip.text)"
-                $line = $line.PadRight(90)
-                Write-Host "`r$line" -ForegroundColor $tip.color -NoNewline
-
-                $currentTip = ($currentTip + 1) % $tips.Count
-                $lastTipTime = $now
-            }
-            Start-Sleep -Milliseconds 300
-        }
-
-        Write-Host "`r                                                                                              "
-
-        $result = Receive-Job -Job $job
-        Remove-Job -Job $job
-
-        if (Test-Path $lamaFile) {
-            Write-Host "  [OK] LaMA model ready" -ForegroundColor Green
-        } else {
-            Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
-            Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
-        }
-    }
-    catch {
-        Write-Host "  [!] Warning: Could not download LaMA model" -ForegroundColor Yellow
-        Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow
-    }
-}
-else {
-    Write-Host "  [OK] LaMA model already exists" -ForegroundColor Green
+# All installers use the same checksum-verified, atomic model download.
+Write-Host "  [*] Preparing LaMA model (196MB)..." -ForegroundColor Cyan
+& $PYTHON_EXE -m lama_inpaint download
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "  [X] Could not prepare verified LaMA weights. Fix the error above and retry." -ForegroundColor Red
+    exit 1
 }
 
 # Download Florence-2 model for watermark detection
@@ -306,6 +210,7 @@ print('FLORENCE_OK')
 }
 
 $florenceProcess = Start-Process -FilePath $PYTHON_EXE -ArgumentList "-c", "`"$florenceScript`"" -NoNewWindow -PassThru
+$florenceHandle = $florenceProcess.Handle
 
 $lastTipTime = Get-Date
 while (-not $florenceProcess.HasExited) {
@@ -324,6 +229,7 @@ while (-not $florenceProcess.HasExited) {
 
 Write-Host "`r                                                                                              "
 
+$florenceProcess.WaitForExit()
 if ($florenceProcess.ExitCode -ne 0) {
     Write-Host "  [!] Warning: Could not download Florence-2 model" -ForegroundColor Yellow
     Write-Host "      It will be downloaded on first use" -ForegroundColor Yellow

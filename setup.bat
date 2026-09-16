@@ -82,6 +82,13 @@ if not exist "%PYTHON_EXE%" (
     echo   [OK] Python found
 )
 
+:: Include the application root for embedded Python package imports.
+set PTH_FILE=%PYTHON_DIR%\python312._pth
+if exist "%PTH_FILE%" (
+    findstr /l /x /c:".." "%PTH_FILE%" >nul
+    if errorlevel 1 echo ..>> "%PTH_FILE%"
+)
+
 echo.
 echo   [*] Installing dependencies...
 echo       This takes 5-10 minutes. Please wait...
@@ -97,9 +104,9 @@ if "%CHINA_MODE%"=="1" (
 :: Install base dependencies
 echo   [*] Installing base packages...
 if "%CHINA_MODE%"=="1" (
-    "%PYTHON_EXE%" -m pip install --upgrade -r requirements.txt --no-cache-dir --use-deprecated=legacy-resolver %PIP_MIRROR%
+    "%PYTHON_EXE%" -m pip install --upgrade -r requirements.txt --no-cache-dir %PIP_MIRROR%
 ) else (
-    "%PYTHON_EXE%" -m pip install --upgrade -r requirements.txt --no-cache-dir --use-deprecated=legacy-resolver
+    "%PYTHON_EXE%" -m pip install --upgrade -r requirements.txt --no-cache-dir
 )
 if errorlevel 1 (
     echo   [X] Failed to install base dependencies
@@ -107,89 +114,27 @@ if errorlevel 1 (
     exit /b 1
 )
 
-:: Verify key packages
-"%PYTHON_EXE%" -c "import torch; import transformers; import webview; import cv2; print('OK')" >nul 2>&1
+:: Verify the full application environment, not only selected imports.
+"%PYTHON_EXE%" -m pip check
 if errorlevel 1 (
-    echo   [X] Failed to verify base packages
+    echo   [X] Dependency verification failed. Use a fresh application environment.
     pause
     exit /b 1
 )
-echo   [OK] Base packages installed
-
-:: Install iopaint without dependencies
-echo   [*] Installing iopaint...
-if "%CHINA_MODE%"=="1" (
-    "%PYTHON_EXE%" -m pip install --upgrade iopaint --no-deps --no-cache-dir %PIP_MIRROR%
-) else (
-    "%PYTHON_EXE%" -m pip install --upgrade iopaint --no-deps --no-cache-dir
-)
+"%PYTHON_EXE%" -c "import remwm; import webview; import yaml; import psutil"
 if errorlevel 1 (
-    echo   [X] Failed to install iopaint
-    pause
-    exit /b 1
-)
-echo   [OK] iopaint installed
-
-:: Install iopaint dependencies manually
-echo   [*] Installing iopaint dependencies...
-if "%CHINA_MODE%"=="1" (
-    "%PYTHON_EXE%" -m pip install pydantic typer einops omegaconf easydict yacs --no-cache-dir %PIP_MIRROR%
-) else (
-    "%PYTHON_EXE%" -m pip install pydantic typer einops omegaconf easydict yacs --no-cache-dir
-)
-if errorlevel 1 (
-    echo   [X] Failed to install iopaint dependencies
+    echo   [X] Failed to import application packages
     pause
     exit /b 1
 )
 
-:: Verify iopaint dependencies
-"%PYTHON_EXE%" -c "import pydantic; import typer; import einops; import omegaconf; import easydict; import yacs; print('OK')" >nul 2>&1
+:: Shared checksum-verified, atomic model download.
+echo   [*] Preparing LaMA model (196MB)...
+"%PYTHON_EXE%" -m lama_inpaint download
 if errorlevel 1 (
-    echo   [!] iopaint dependencies verification failed, attempting reinstall...
-    if "%CHINA_MODE%"=="1" (
-        "%PYTHON_EXE%" -m pip install pydantic --no-cache-dir --force-reinstall %PIP_MIRROR%
-        "%PYTHON_EXE%" -m pip install typer --no-cache-dir --force-reinstall %PIP_MIRROR%
-        "%PYTHON_EXE%" -m pip install einops --no-cache-dir --force-reinstall %PIP_MIRROR%
-        "%PYTHON_EXE%" -m pip install omegaconf --no-cache-dir --force-reinstall %PIP_MIRROR%
-        "%PYTHON_EXE%" -m pip install easydict --no-cache-dir --force-reinstall %PIP_MIRROR%
-        "%PYTHON_EXE%" -m pip install yacs --no-cache-dir --force-reinstall %PIP_MIRROR%
-    ) else (
-        "%PYTHON_EXE%" -m pip install pydantic --no-cache-dir --force-reinstall
-        "%PYTHON_EXE%" -m pip install typer --no-cache-dir --force-reinstall
-        "%PYTHON_EXE%" -m pip install einops --no-cache-dir --force-reinstall
-        "%PYTHON_EXE%" -m pip install omegaconf --no-cache-dir --force-reinstall
-        "%PYTHON_EXE%" -m pip install easydict --no-cache-dir --force-reinstall
-        "%PYTHON_EXE%" -m pip install yacs --no-cache-dir --force-reinstall
-    )
-
-    "%PYTHON_EXE%" -c "import pydantic; import typer; import einops; import omegaconf; import easydict; import yacs; print('OK')" >nul 2>&1
-    if errorlevel 1 (
-        echo   [X] Could not install iopaint dependencies
-        echo       Please try running: pip install pydantic typer einops omegaconf easydict yacs
-        pause
-        exit /b 1
-    )
-)
-echo   [OK] iopaint dependencies installed and verified
-
-:: Download LaMA model
-echo.
-echo   [*] Downloading LaMA model (196MB)...
-set LAMA_DIR=%USERPROFILE%\.cache\torch\hub\checkpoints
-set LAMA_FILE=%LAMA_DIR%\big-lama.pt
-
-if not exist "%LAMA_FILE%" (
-    if not exist "%LAMA_DIR%" mkdir "%LAMA_DIR%"
-    powershell -Command "Invoke-WebRequest -Uri 'https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt' -OutFile '%LAMA_FILE%' -UseBasicParsing"
-    if exist "%LAMA_FILE%" (
-        echo   [OK] LaMA model ready
-    ) else (
-        echo   [!] Warning: Could not download LaMA model
-        echo       It will be downloaded on first use
-    )
-) else (
-    echo   [OK] LaMA model already exists
+    echo   [X] Could not prepare verified LaMA weights. Fix the error above and retry.
+    pause
+    exit /b 1
 )
 
 :: Download Florence-2 model

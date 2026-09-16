@@ -5,14 +5,8 @@ import cv2
 import numpy as np
 from PIL import Image, ImageDraw
 
-# Monkey-patch: cached_download was removed in huggingface_hub 0.24, add compatibility shim
-import huggingface_hub
-if not hasattr(huggingface_hub, 'cached_download'):
-    huggingface_hub.cached_download = huggingface_hub.hf_hub_download
-
 from transformers import AutoProcessor, Florence2ForConditionalGeneration
-from iopaint.model_manager import ModelManager
-from iopaint.schema import HDStrategy, LDMSampler, InpaintRequest as Config
+from lama_inpaint.runtime import LamaInpaint
 import torch
 from torch.nn import Module
 import tqdm
@@ -29,43 +23,11 @@ except ImportError:
     MatLike = np.ndarray
 
 
-def download_lama_model():
-    """Download LaMA model using iopaint."""
-    logger.info("Downloading LaMA model... (this may take a few minutes)")
-    print("Downloading LaMA model (~196MB)... Please wait.")
-
-    result = subprocess.run(
-        [sys.executable, "-m", "iopaint", "download", "--model", "lama"],
-        capture_output=False,  # Show download progress
-        text=True
-    )
-
-    if result.returncode != 0:
-        logger.error("Failed to download LaMA model")
-        return False
-
-    logger.info("LaMA model downloaded successfully")
-    print("LaMA model downloaded!")
-    return True
-
-
 def load_lama_model(device):
-    """Load LaMA model, downloading if necessary."""
-    try:
-        return ModelManager(name="lama", device=device)
-    except NotImplementedError as e:
-        if "Unsupported model: lama" in str(e):
-            print("LaMA model not available, attempting to download...")
-            if download_lama_model():
-                # Re-import to refresh model registry
-                import importlib
-                import iopaint.model
-                importlib.reload(iopaint.model)
-                # Try again
-                return ModelManager(name="lama", device=device)
-            else:
-                raise RuntimeError("Failed to download LaMA model. Please run manually: python\\python.exe -m iopaint download --model lama")
-        raise
+    """Load checksum-verified LaMA weights using the standalone adapter."""
+    logger.info("Loading LaMA (verifying cached weights or downloading if missing)")
+    return LamaInpaint(device)
+
 
 class TaskType(str, Enum):
     OPEN_VOCAB_DETECTION = "<OPEN_VOCABULARY_DETECTION>"
@@ -156,16 +118,8 @@ def detect_only(image: MatLike, model: Florence2ForConditionalGeneration, proces
 
     return results
 
-def process_image_with_lama(image: MatLike, mask: MatLike, model_manager: ModelManager):
-    config = Config(
-        ldm_steps=50,
-        ldm_sampler=LDMSampler.ddim,
-        hd_strategy=HDStrategy.CROP,
-        hd_strategy_crop_margin=64,
-        hd_strategy_crop_trigger_size=800,
-        hd_strategy_resize_limit=1600,
-    )
-    result = model_manager(image, mask, config)
+def process_image_with_lama(image: MatLike, mask: MatLike, model_manager: LamaInpaint):
+    result = model_manager(image, mask)
 
     if result.dtype in [np.float64, np.float32]:
         result = np.clip(result, 0, 255).astype(np.uint8)

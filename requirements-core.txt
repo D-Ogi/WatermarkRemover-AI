@@ -2,7 +2,7 @@
 torch>=2.14.0
 torchvision>=0.29.0
 # Native Florence-2 API; pre-4.56 releases do not provide the required model class.
-transformers>=4.56.0,<5
+transformers>=5.18.0,<6
 numpy>=2,<3
 opencv-python-headless>=5.0.0.93,<5.1.0
 Pillow>=10.0.0

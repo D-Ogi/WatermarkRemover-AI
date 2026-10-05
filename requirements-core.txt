@@ -6,7 +6,7 @@ transformers>=4.56.0,<5
 numpy>=2,<3
 opencv-python-headless>=5.0.0.93,<5.1.0
 Pillow>=10.0.0
-filelock>=3.16
+filelock>=4.0.9
 loguru
 click
 tqdm

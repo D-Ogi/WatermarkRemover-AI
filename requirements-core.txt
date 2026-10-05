@@ -1,6 +1,6 @@
 # CLI and model runtime. Install a matching torch/torchvision build for your device first.
 torch>=2.14.0
-torchvision>=0.29.0
+torchvision>=0.29.1
 # Native Florence-2 API; pre-4.56 releases do not provide the required model class.
 transformers>=4.56.0,<5
 numpy>=2,<3

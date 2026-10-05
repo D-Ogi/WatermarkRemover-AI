@@ -5,4 +5,4 @@ numpy==2.5.3
 Pillow==12.3.0
 matplotlib==3.11.2
 opencv-python-headless==5.0.0.93
-filelock==3.32.3
+filelock==4.0.9

@@ -121,8 +121,8 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     """
     try:
         import mediapipe as mp
-    except ImportError:
-        logger.warning("mediapipe not installed — face protection disabled")
+    except Exception as e:
+        logger.warning(f"mediapipe not available — face protection disabled: {e}")
         return mask_np
 
     h, w = mask_np.shape[:2]
@@ -137,61 +137,62 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     # Nose tip area
     NOSE = [1, 2, 98, 327, 168, 6, 197, 195, 5, 4, 45, 275, 44]
 
-    with mp.solutions.face_mesh.FaceMesh(
-        static_image_mode=True,
-        max_num_faces=5,
-        refine_landmarks=True,
-        min_detection_confidence=0.3,
-    ) as face_mesh:
-        results = face_mesh.process(image_np)
+    try:
+        with mp.solutions.face_mesh.FaceMesh(
+            static_image_mode=True,
+            max_num_faces=5,
+            refine_landmarks=True,
+            min_detection_confidence=0.3,
+        ) as face_mesh:
+            results = face_mesh.process(image_np)
 
-        if not results.multi_face_landmarks:
-            logger.warning("No face detected — face protection skipped")
-            return mask_np
+            if not results.multi_face_landmarks:
+                logger.warning("No face detected — face protection skipped")
+                return mask_np
 
-        for face_landmarks in results.multi_face_landmarks:
-            def get_polygon(indices, margin_pct=0.15):
-                """Get convex hull of landmark indices with margin, as pixel coords."""
-                points = []
-                for idx in indices:
-                    lm = face_landmarks.landmark[idx]
-                    points.append((int(lm.x * w), int(lm.y * h)))
+            for face_landmarks in results.multi_face_landmarks:
+                def get_polygon(indices, margin_pct=0.15):
+                    """Get bounding rect of landmark indices with margin, as pixel polygon."""
+                    points = []
+                    for idx in indices:
+                        lm = face_landmarks.landmark[idx]
+                        points.append((int(lm.x * w), int(lm.y * h)))
 
-                if len(points) < 3:
-                    return None
+                    if len(points) < 3:
+                        return None
 
-                pts = np.array(points, dtype=np.int32)
-                # Compute bounding rect and expand by margin
-                x_min, y_min = pts.min(axis=0)
-                x_max, y_max = pts.max(axis=0)
-                mw = int((x_max - x_min) * margin_pct)
-                mh = int((y_max - y_min) * margin_pct)
-                # Build expanded rectangle polygon
-                return np.array([
-                    [max(0, x_min - mw), max(0, y_min - mh)],
-                    [min(w, x_max + mw), max(0, y_min - mh)],
-                    [min(w, x_max + mw), min(h, y_max + mh)],
-                    [max(0, x_min - mw), min(h, y_max + mh)],
-                ], dtype=np.int32)
+                    pts = np.array(points, dtype=np.int32)
+                    x_min, y_min = pts.min(axis=0)
+                    x_max, y_max = pts.max(axis=0)
+                    mw = int((x_max - x_min) * margin_pct)
+                    mh = int((y_max - y_min) * margin_pct)
+                    return np.array([
+                        [max(0, x_min - mw), max(0, y_min - mh)],
+                        [min(w, x_max + mw), max(0, y_min - mh)],
+                        [min(w, x_max + mw), min(h, y_max + mh)],
+                        [max(0, x_min - mw), min(h, y_max + mh)],
+                    ], dtype=np.int32)
 
-            # Protect eyes (generous margin — eyes are the most vulnerable)
-            for eye_indices in [LEFT_EYE, RIGHT_EYE]:
-                poly = get_polygon(eye_indices, margin_pct=0.35)
+                # Protect eyes (generous margin — eyes are the most vulnerable)
+                for eye_indices in [LEFT_EYE, RIGHT_EYE]:
+                    poly = get_polygon(eye_indices, margin_pct=0.35)
+                    if poly is not None:
+                        cv2.fillPoly(mask_np, [poly], 0)
+                        logger.info(f"Protected eye region: {poly.tolist()}")
+
+                # Protect mouth
+                poly = get_polygon(LIPS, margin_pct=0.25)
                 if poly is not None:
                     cv2.fillPoly(mask_np, [poly], 0)
-                    logger.info(f"Protected eye region: {poly.tolist()}")
+                    logger.info("Protected mouth region")
 
-            # Protect mouth
-            poly = get_polygon(LIPS, margin_pct=0.25)
-            if poly is not None:
-                cv2.fillPoly(mask_np, [poly], 0)
-                logger.info("Protected mouth region")
-
-            # Protect nose
-            poly = get_polygon(NOSE, margin_pct=0.20)
-            if poly is not None:
-                cv2.fillPoly(mask_np, [poly], 0)
-                logger.info("Protected nose region")
+                # Protect nose
+                poly = get_polygon(NOSE, margin_pct=0.20)
+                if poly is not None:
+                    cv2.fillPoly(mask_np, [poly], 0)
+                    logger.info("Protected nose region")
+    except Exception as e:
+        logger.warning(f"Face protection failed (non-critical): {e}")
 
     return mask_np
 

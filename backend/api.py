@@ -207,6 +207,8 @@ async def remove(req: RemoveRequest):
             "image_height": image.height,
         }
     except Exception as e:
+        import traceback
+        logger.error(f"/api/remove failed: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

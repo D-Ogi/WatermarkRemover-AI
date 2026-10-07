@@ -124,10 +124,29 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     """
     gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
 
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-    )
-    faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
+    # Find cascade file — handle missing data files (opencv-python-headless on Windows)
+    cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
+    if not os.path.exists(cascade_path):
+        # Try to download the cascade file
+        try:
+            import urllib.request
+            url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
+            os.makedirs(cv2.data.haarcascades, exist_ok=True)
+            urllib.request.urlretrieve(url, cascade_path)
+            logger.info(f"Downloaded haar cascade to {cascade_path}")
+        except Exception as e:
+            logger.warning(f"Haar cascade not found and download failed — face protection skipped: {e}")
+            return mask_np
+
+    try:
+        face_cascade = cv2.CascadeClassifier(cascade_path)
+        if face_cascade.empty():
+            logger.warning("Haar cascade failed to load — face protection skipped")
+            return mask_np
+        faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
+    except Exception as e:
+        logger.warning(f"Face detection failed — face protection skipped: {e}")
+        return mask_np
 
     if len(faces) == 0:
         logger.warning("No face detected — face protection skipped")

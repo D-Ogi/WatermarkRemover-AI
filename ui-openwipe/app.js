@@ -9,12 +9,18 @@ let imageCtx = null;
 let isDrawing = false;
 let brushSize = 30;
 
+// Batch state
+let batchFiles = [];
+let batchOutputDirHandle = null;
+let batchCancelled = false;
+
 // === Initialization ===
 window.addEventListener('DOMContentLoaded', () => {
     checkHealth();
     setupDragDrop();
     setupBrush();
     setupSliders();
+    setupBatch();
 });
 
 async function checkHealth() {
@@ -33,9 +39,15 @@ function setMode(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
     document.querySelector(`[data-mode="${mode}"]`).classList.add('active');
+
+    document.getElementById('drop-zone').style.display = mode === 'batch' ? 'none' : (sourceImage ? 'none' : 'flex');
+    document.getElementById('editor').style.display = (mode !== 'batch' && sourceImage) ? 'flex' : 'none';
+    document.getElementById('batch-panel').style.display = mode === 'batch' ? 'flex' : 'none';
+    document.getElementById('action-bar').style.display = (mode !== 'batch' && sourceImage) ? 'block' : 'none';
+
     document.getElementById('brush-settings').style.display = mode === 'manual' ? 'block' : 'none';
     const maskCanvas = document.getElementById('mask-canvas');
-    maskCanvas.style.pointerEvents = mode === 'manual' ? 'auto' : 'none';
+    if (maskCanvas) maskCanvas.style.pointerEvents = mode === 'manual' ? 'auto' : 'none';
 }
 
 // === Drag & Drop ===
@@ -51,6 +63,15 @@ function setupDragDrop() {
         if (e.dataTransfer.files.length) loadImage(e.dataTransfer.files[0]);
     });
     fi.addEventListener('change', e => { if (e.target.files.length) loadImage(e.target.files[0]); });
+
+    const bp = document.getElementById('batch-panel');
+    bp.addEventListener('dragover', e => { e.preventDefault(); bp.classList.add('drag-over'); });
+    bp.addEventListener('dragleave', () => bp.classList.remove('drag-over'));
+    bp.addEventListener('drop', e => {
+        e.preventDefault();
+        bp.classList.remove('drag-over');
+        if (e.dataTransfer.files.length) addBatchFiles(e.dataTransfer.files);
+    });
 }
 
 function loadImage(file) {
@@ -69,7 +90,7 @@ function loadImage(file) {
         document.getElementById('drop-zone').style.display = 'none';
         document.getElementById('editor').style.display = 'flex';
         document.getElementById('action-bar').style.display = 'block';
-        document.getElementById('image-info').textContent = `${img.width} × ${img.height}`;
+        document.getElementById('image-info').textContent = img.width + ' x ' + img.height;
         document.getElementById('save-btn').style.display = 'none';
     };
     img.src = URL.createObjectURL(file);
@@ -78,6 +99,7 @@ function loadImage(file) {
 // === Brush ===
 function setupBrush() {
     const m = document.getElementById('mask-canvas');
+    if (!m) return;
 
     m.addEventListener('mousedown', e => {
         if (currentMode !== 'manual') return;
@@ -120,7 +142,159 @@ function setupSliders() {
     });
 }
 
-// === Processing ===
+// === Output Save Location ===
+async function chooseOutputDir() {
+    try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        batchOutputDirHandle = dirHandle;
+        document.getElementById('batch-output-path').textContent = 'Output: ' + dirHandle.name;
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            document.getElementById('batch-output-path').textContent = 'Output: browser not supported (will download each file)';
+        }
+    }
+}
+
+// === Batch Processing ===
+function setupBatch() {
+    const bi = document.getElementById('batch-input');
+    bi.addEventListener('change', e => {
+        if (e.target.files.length) addBatchFiles(e.target.files);
+    });
+}
+
+function addBatchFiles(fileList) {
+    for (const file of fileList) {
+        if (file.type.startsWith('image/')) {
+            batchFiles.push(file);
+        }
+    }
+    renderBatchList();
+}
+
+function renderBatchList() {
+    const list = document.getElementById('batch-file-list');
+    list.innerHTML = '';
+
+    batchFiles.forEach((file, i) => {
+        const item = document.createElement('div');
+        item.className = 'batch-item';
+        item.id = 'batch-item-' + i;
+        item.innerHTML = '<span class="batch-name">' + file.name + '</span>' +
+            '<span class="batch-status" id="batch-status-' + i + '">pending</span>';
+        list.appendChild(item);
+    });
+
+    document.getElementById('batch-controls').style.display = batchFiles.length > 0 ? 'flex' : 'none';
+    document.getElementById('batch-start-btn').textContent = 'Start Batch (' + batchFiles.length + ' images)';
+}
+
+async function startBatch() {
+    if (batchFiles.length === 0) return;
+
+    batchCancelled = false;
+    const btn = document.getElementById('batch-start-btn');
+    btn.disabled = true;
+    btn.textContent = 'Processing...';
+
+    const prompt = document.getElementById('detect-prompt').value;
+    const maxBbox = parseFloat(document.getElementById('max-bbox').value);
+    const maskMode = document.getElementById('mask-mode').value;
+    const doublePass = document.getElementById('double-pass').checked;
+    const enhance = document.getElementById('enhance-region').checked;
+    const outputFormat = document.getElementById('output-format').value;
+    const suffix = document.getElementById('output-suffix').value || '_cleaned';
+
+    for (let i = 0; i < batchFiles.length; i++) {
+        if (batchCancelled) {
+            document.getElementById('batch-status-' + i).textContent = 'cancelled';
+            break;
+        }
+
+        const file = batchFiles[i];
+        const statusEl = document.getElementById('batch-status-' + i);
+        statusEl.textContent = 'processing...';
+        statusEl.className = 'batch-status processing';
+
+        try {
+            const imgB64 = await fileToB64(file);
+
+            const res = await fetch(API + '/remove', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    image_b64: imgB64,
+                    prompt: prompt,
+                    max_bbox_percent: maxBbox,
+                    mask_mode: maskMode,
+                    double_pass: doublePass,
+                    enhance: enhance,
+                }),
+            });
+
+            const data = await res.json();
+
+            if (data.result_b64) {
+                const ext = outputFormat === 'JPEG' ? 'jpg' : outputFormat.toLowerCase();
+                const baseName = file.name.replace(/\.[^.]+$/, '');
+                const outName = baseName + suffix + '.' + ext;
+
+                await saveBase64ToFile(data.result_b64, outName, outputFormat);
+                statusEl.textContent = 'done';
+                statusEl.className = 'batch-status done';
+            } else {
+                statusEl.textContent = 'error';
+                statusEl.className = 'batch-status error';
+            }
+        } catch (err) {
+            statusEl.textContent = 'error: ' + err.message;
+            statusEl.className = 'batch-status error';
+        }
+    }
+
+    btn.disabled = false;
+    btn.textContent = batchCancelled ? 'Start Batch' : 'Batch Complete';
+}
+
+function cancelBatch() {
+    batchCancelled = true;
+}
+
+async function saveBase64ToFile(b64, fileName, format) {
+    const byteString = atob(b64);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+
+    const mimeMap = { 'JPEG': 'image/jpeg', 'PNG': 'image/png', 'WEBP': 'image/webp' };
+    const blob = new Blob([ab], { type: mimeMap[format] || 'image/png' });
+
+    if (batchOutputDirHandle) {
+        const fh = await batchOutputDirHandle.getFileHandle(fileName, { create: true });
+        const writable = await fh.createWritable();
+        await writable.write(blob);
+        await writable.close();
+    } else {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        URL.revokeObjectURL(link.href);
+    }
+}
+
+function fileToB64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+// === Single Image Processing ===
 async function processImage() {
     if (!sourceImage) return;
 
@@ -140,7 +314,7 @@ async function processImage() {
         if (currentMode === 'manual') {
             const maskB64 = canvasToB64('mask-canvas');
             progressFill.style.width = '50%';
-            result = await fetch(`${API}/inpaint`, {
+            result = await fetch(API + '/inpaint', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -151,7 +325,7 @@ async function processImage() {
             });
         } else {
             progressFill.style.width = '50%';
-            result = await fetch(`${API}/remove`, {
+            result = await fetch(API + '/remove', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -185,7 +359,6 @@ function displayResult(b64) {
     const img = new Image();
     img.onload = () => {
         resultImage = img;
-        // Show result on canvas
         const c = document.getElementById('image-canvas');
         c.width = img.width;
         c.height = img.height;
@@ -193,7 +366,7 @@ function displayResult(b64) {
         imageCtx.drawImage(img, 0, 0);
         document.getElementById('save-btn').style.display = 'flex';
         document.getElementById('image-info').textContent =
-            `${img.width} × ${img.height} — Result (full resolution)`;
+            img.width + ' x ' + img.height + ' — Result (full resolution)';
     };
     img.src = 'data:image/png;base64,' + b64;
 }
@@ -203,30 +376,41 @@ function canvasToB64(canvasId) {
     return c.toDataURL('image/png').split(',')[1];
 }
 
-function saveResult() {
+async function saveResult() {
     if (!resultImage) return;
     const fmt = document.getElementById('output-format').value;
+    const suffix = document.getElementById('output-suffix').value || '_cleaned';
     const c = document.getElementById('image-canvas');
-    const link = document.createElement('a');
 
-    if (fmt === 'JPEG') {
-        link.href = c.toDataURL('image/jpeg', 1.0);
-        link.download = 'openwipe-result.jpg';
-    } else if (fmt === 'WEBP') {
-        link.href = c.toDataURL('image/webp', 1.0);
-        link.download = 'openwipe-result.webp';
-    } else {
-        link.href = c.toDataURL('image/png');
-        link.download = 'openwipe-result.png';
+    const mimeMap = { 'JPEG': 'image/jpeg', 'PNG': 'image/png', 'WEBP': 'image/webp' };
+    const extMap = { 'JPEG': 'jpg', 'PNG': 'png', 'WEBP': 'webp' };
+
+    const blob = await new Promise(r => c.toBlob(r, mimeMap[fmt] || 'image/png', 1.0));
+
+    try {
+        const fh = await window.showSaveFilePicker({
+            suggestedName: 'result' + suffix + '.' + (extMap[fmt] || 'png'),
+            types: [{
+                description: 'Image',
+                accept: { [mimeMap[fmt] || 'image/png']: ['.' + (extMap[fmt] || 'png')] }
+            }],
+        });
+        const writable = await fh.createWritable();
+        await writable.write(blob);
+        await writable.close();
+    } catch (e) {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'result' + suffix + '.' + (extMap[fmt] || 'png');
+        link.click();
+        URL.revokeObjectURL(link.href);
     }
-
-    link.click();
 }
 
 function resetEditor() {
     sourceImage = null;
     resultImage = null;
-    document.getElementById('drop-zone').style.display = 'flex';
+    document.getElementById('drop-zone').style.display = currentMode === 'batch' ? 'none' : 'flex';
     document.getElementById('editor').style.display = 'none';
     document.getElementById('action-bar').style.display = 'none';
     document.getElementById('save-btn').style.display = 'none';

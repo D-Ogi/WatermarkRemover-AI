@@ -1,0 +1,20 @@
+[package]
+name = "openwipe"
+version = "0.1.0"
+edition = "2021"
+description = "Full-resolution watermark & object removal — 100% local"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = true
+codegen-units = 1
+panic = "abort"

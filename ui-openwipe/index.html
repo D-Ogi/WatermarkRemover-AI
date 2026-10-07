@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenWipe</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/>
+                </svg>
+                <h1>OpenWipe</h1>
+                <span class="badge">Full Resolution</span>
+            </div>
+            <div class="header-actions">
+                <span id="device-badge" class="device-badge">connecting...</span>
+            </div>
+        </header>
+        <main>
+            <aside class="sidebar">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="remove" onclick="setMode('remove')">Auto Remove</button>
+                    <button class="mode-btn" data-mode="manual" onclick="setMode('manual')">Brush Select</button>
+                </div>
+                <div class="settings">
+                    <h3>Settings</h3>
+                    <div class="setting-group">
+                        <label>Detection Prompt</label>
+                        <input type="text" id="detect-prompt" value="watermark" placeholder="e.g. watermark, logo, text">
+                    </div>
+                    <div class="setting-group">
+                        <label>Mask Mode</label>
+                        <select id="mask-mode">
+                            <option value="box">Box (fast)</option>
+                            <option value="stroke">Stroke (precise)</option>
+                        </select>
+                    </div>
+                    <div class="setting-group">
+                        <label>Max Bbox Size <span id="max-bbox-val">10%</span></label>
+                        <input type="range" id="max-bbox" min="1" max="50" value="10">
+                    </div>
+                    <div class="setting-group">
+                        <label><input type="checkbox" id="double-pass"> Double Pass</label>
+                    </div>
+                    <div class="setting-group">
+                        <label><input type="checkbox" id="enhance-region"> Enhance Region</label>
+                    </div>
+                    <div class="setting-group">
+                        <label>Output Format</label>
+                        <select id="output-format">
+                            <option value="PNG">PNG (lossless)</option>
+                            <option value="JPEG">JPEG (q=100)</option>
+                            <option value="WEBP">WEBP (q=100)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="settings" id="brush-settings" style="display:none">
+                    <h3>Brush</h3>
+                    <div class="setting-group">
+                        <label>Size <span id="brush-size-val">30px</span></label>
+                        <input type="range" id="brush-size" min="5" max="100" value="30">
+                    </div>
+                    <button class="btn-secondary" onclick="clearMask()">Clear Mask</button>
+                </div>
+            </aside>
+            <div class="canvas-area">
+                <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                    <p>Drop image here or click to browse</p>
+                    <p class="hint">PNG, JPG, WEBP &middot; Full resolution preserved</p>
+                    <input type="file" id="file-input" accept="image/*" hidden>
+                </div>
+                <div id="editor" class="editor" style="display:none">
+                    <div class="editor-toolbar">
+                        <span id="image-info" class="image-info"></span>
+                        <button class="btn-secondary btn-sm" onclick="resetEditor()">New Image</button>
+                    </div>
+                    <div class="canvas-container" id="canvas-container">
+                        <canvas id="image-canvas"></canvas>
+                        <canvas id="mask-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer id="action-bar" style="display:none">
+            <div class="progress-bar" id="progress-bar" style="display:none">
+                <div class="progress-fill" id="progress-fill"></div>
+                <span id="progress-text">Processing...</span>
+            </div>
+            <div class="actions">
+                <button class="btn-primary" id="process-btn" onclick="processImage()">Remove Watermark</button>
+                <button class="btn-accent" id="save-btn" onclick="saveResult()" style="display:none">Save Result</button>
+            </div>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

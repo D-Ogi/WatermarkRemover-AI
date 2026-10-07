@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw
 
 from transformers import AutoProcessor, Florence2ForConditionalGeneration
 from lama_inpaint.runtime import LamaInpaint
+from quality_pipeline import QualityPipeline
 import torch
 from torch.nn import Module
 import tqdm
@@ -608,14 +609,17 @@ def handle_one(image_path: Path, output_path: Path, florence_model, florence_pro
         else:
             return process_video(image_path, output_path, florence_model, florence_processor, model_manager, device, transparent, max_bbox_percent, force_format, detection_prompt, progress_offset, progress_scale, mask_mode=mask_mode, double_pass=double_pass)
 
-    # Process image
+    # Process image at FULL RESOLUTION — no downscaling
     image = Image.open(image_path).convert("RGB")
     if max_dim is not None and max(image.width, image.height) > max_dim:
+        # Only downscale if explicitly requested (for very low VRAM systems)
         orig_w, orig_h = image.size
         scale = max_dim / max(orig_w, orig_h)
         new_size = (max(1, int(orig_w * scale)), max(1, int(orig_h * scale)))
         image = image.resize(new_size, Image.Resampling.LANCZOS)
-        logger.info(f"Rescaled {image_path.name} from {orig_w}x{orig_h} to {image.width}x{image.height} (max-dim={max_dim})")
+        logger.warning(f"Downscaled {image_path.name} from {orig_w}x{orig_h} to {image.width}x{image.height} (max-dim={max_dim}) — output will be lower resolution!")
+    else:
+        logger.info(f"Processing at full resolution: {image.width}x{image.height}")
 
     mask_image = get_watermark_mask(image, florence_model, florence_processor, device, max_bbox_percent, detection_prompt, mask_mode=mask_mode)
 
@@ -646,7 +650,14 @@ def handle_one(image_path: Path, output_path: Path, florence_model, florence_pro
         output_format = "PNG"
 
     new_output_path = output_path.with_suffix(f".{output_format.lower()}")
-    result_image.save(new_output_path, format=output_format)
+    # Save with MAXIMUM quality settings
+    if output_format == "JPEG":
+        result_image.save(new_output_path, format="JPEG", quality=100, subsampling=0)
+    elif output_format == "WEBP":
+        result_image.save(new_output_path, format="WEBP", quality=100, method=6)
+    else:
+        result_image.save(new_output_path, format=output_format, optimize=True)
+    logger.info(f"Saved {new_output_path} ({output_format}, max quality)")
     # Report progress for this image (end of range)
     final_progress = progress_offset + progress_scale
     print(f"input_path:{image_path}, output_path:{new_output_path}, overall_progress:{final_progress}%")
@@ -666,7 +677,7 @@ def handle_one(image_path: Path, output_path: Path, florence_model, florence_pro
 @click.option("--fade-out", default=0.0, type=float, help="Extend mask forwards by N seconds to handle fade-out watermarks.")
 @click.option("--mask-mode", type=click.Choice(["box", "stroke"], case_sensitive=False), default="box", help="Mask mode: 'box' (default) or 'stroke' for edge/stroke-level mask.")
 @click.option("--double-pass", is_flag=True, default=False, help="Run a second inpainting pass on the mask.")
-@click.option("--max-dim", type=click.IntRange(min=1), default=None, help="Downscale image if max dimension exceeds this value.")
+@click.option("--max-dim", type=click.IntRange(min=1), default=None, help="[QUALITY WARNING] Downscale image before processing. Reduces output resolution! Use only if you run out of memory.")
 def main(input_path: str, output_path: str, preview: bool, overwrite: bool, transparent: bool, max_bbox_percent: float, force_format: str, detection_prompt: str, detection_skip: int, fade_in: float, fade_out: float, mask_mode: str, double_pass: bool, max_dim: int):
     """
     CLI entry point for WatermarkRemover-AI to process images, videos, or directories.

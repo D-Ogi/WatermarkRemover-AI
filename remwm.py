@@ -104,7 +104,64 @@ def extract_strokes(roi: np.ndarray) -> np.ndarray:
     return cv2.dilate(stroke_mask, kernel, iterations=2)
 
 
-def get_watermark_mask(image: MatLike, model: Florence2ForConditionalGeneration, processor: AutoProcessor, device: str, max_bbox_percent: float, detection_prompt: str = "watermark", mask_mode: str = "box"):
+def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarray:
+    """
+    Protect eyes, nose, and mouth from being inpainted.
+
+    Detects face features using OpenCV cascade classifiers and removes those
+    regions from the mask so LaMa won't corrupt them.
+
+    Args:
+        image_np: HxWx3 uint8 RGB image array.
+        mask_np: HxW uint8 mask array (modified in place + returned).
+
+    Returns:
+        Mask with face feature regions zeroed out.
+    """
+    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+
+    # Detect faces
+    face_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
+    )
+    eye_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_eye.xml"
+    )
+    mouth_cascade = cv2.CascadeClassifier(
+        cv2.data.haarcascades + "haarcascade_smile.xml"
+    )
+
+    faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(30, 30))
+
+    for (fx, fy, fw, fh) in faces:
+        face_roi = gray[fy:fy+fh, fx:fx+fw]
+
+        # Protect eyes (with generous margin)
+        eyes = eye_cascade.detectMultiScale(face_roi, 1.1, 5, minSize=(20, 20))
+        for (ex, ey, ew, eh) in eyes:
+            margin = int(max(ew, eh) * 0.4)
+            x1 = max(0, fx + ex - margin)
+            y1 = max(0, fy + ey - margin)
+            x2 = min(mask_np.shape[1], fx + ex + ew + margin)
+            y2 = min(mask_np.shape[0], fy + ey + eh + margin)
+            mask_np[y1:y2, x1:x2] = 0
+            logger.info(f"Protected eye region: ({x1},{y1})-({x2},{y2})")
+
+        # Protect mouth
+        mouths = mouth_cascade.detectMultiScale(face_roi, 1.1, 10, minSize=(30, 30))
+        for (mx, my, mw, mh) in mouths:
+            margin = int(max(mw, mh) * 0.3)
+            x1 = max(0, fx + mx - margin)
+            y1 = max(0, fy + my - margin)
+            x2 = min(mask_np.shape[1], fx + mx + mw + margin)
+            y2 = min(mask_np.shape[0], fy + my + mh + margin)
+            mask_np[y1:y2, x1:x2] = 0
+            logger.info(f"Protected mouth region: ({x1},{y1})-({x2},{y2})")
+
+    return mask_np
+
+
+def get_watermark_mask(image: MatLike, model: Florence2ForConditionalGeneration, processor: AutoProcessor, device: str, max_bbox_percent: float, detection_prompt: str = "watermark", mask_mode: str = "stroke", protect_face: bool = True):
     """
     Detect watermarks and create a mask for inpainting.
 
@@ -115,7 +172,8 @@ def get_watermark_mask(image: MatLike, model: Florence2ForConditionalGeneration,
         device: cuda or cpu
         max_bbox_percent: Maximum bbox size as percentage of image
         detection_prompt: Text prompt for detection (e.g. "watermark", "watermark Sora logo", "Getty Images")
-        mask_mode: 'box' or 'stroke' (default: 'box')
+        mask_mode: 'box' or 'stroke' (default: 'stroke' — tighter mask, better quality)
+        protect_face: Exclude eyes/mouth from mask to prevent corruption (default: True)
     """
     task_prompt = TaskType.OPEN_VOCAB_DETECTION
     parsed_answer = identify(task_prompt, image, detection_prompt, model, processor, device)
@@ -146,6 +204,13 @@ def get_watermark_mask(image: MatLike, model: Florence2ForConditionalGeneration,
 
         if mask_mode == "stroke":
             mask = Image.fromarray(mask_np)
+
+    # Protect face features (eyes, mouth) from inpainting corruption
+    if protect_face:
+        img_arr = np.array(image.convert("RGB"))
+        mask_arr = np.array(mask)
+        mask_arr = protect_face_features(img_arr, mask_arr)
+        mask = Image.fromarray(mask_arr)
 
     return mask
 
@@ -675,7 +740,7 @@ def handle_one(image_path: Path, output_path: Path, florence_model, florence_pro
 @click.option("--detection-skip", default=1, type=int, help="Detect watermarks every N frames for videos (1-10). Higher = faster but may miss brief watermarks.")
 @click.option("--fade-in", default=0.0, type=float, help="Extend mask backwards by N seconds to handle fade-in watermarks.")
 @click.option("--fade-out", default=0.0, type=float, help="Extend mask forwards by N seconds to handle fade-out watermarks.")
-@click.option("--mask-mode", type=click.Choice(["box", "stroke"], case_sensitive=False), default="box", help="Mask mode: 'box' (default) or 'stroke' for edge/stroke-level mask.")
+@click.option("--mask-mode", type=click.Choice(["box", "stroke"], case_sensitive=False), default="stroke", help="Mask mode: 'stroke' (default, tighter mask = better quality) or 'box' (fills entire detection bbox).")
 @click.option("--double-pass", is_flag=True, default=False, help="Run a second inpainting pass on the mask.")
 @click.option("--max-dim", type=click.IntRange(min=1), default=None, help="[QUALITY WARNING] Downscale image before processing. Reduces output resolution! Use only if you run out of memory.")
 def main(input_path: str, output_path: str, preview: bool, overwrite: bool, transparent: bool, max_bbox_percent: float, force_format: str, detection_prompt: str, detection_skip: int, fade_in: float, fade_out: float, mask_mode: str, double_pass: bool, max_dim: int):

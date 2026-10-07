@@ -82,13 +82,16 @@ def identify(task_prompt: TaskType, image: MatLike, text_input: str, model: Flor
 
 def extract_strokes(roi: np.ndarray) -> np.ndarray:
     """
-    Extract local high-contrast edges and stroke contours from a bounding box region.
+    Extract text stroke contours from a bounding box region.
+
+    Only captures BRIGHT features (watermark text is typically white/light)
+    and ignores dark features (eye pupils, iris — the source of eye corruption).
 
     Args:
         roi: BGR or grayscale numpy array of the detected bounding box.
 
     Returns:
-        Dilated binary mask of the detected character strokes.
+        Dilated binary mask of the detected text strokes.
     """
     if roi.size == 0:
         return np.zeros((0, 0), dtype=np.uint8)
@@ -97,9 +100,13 @@ def extract_strokes(roi: np.ndarray) -> np.ndarray:
     ksize = max(5, int(min(h, w) * 0.25) | 1)
     ksize = min(ksize, 31)
     blur = cv2.GaussianBlur(gray, (ksize, ksize), 0)
-    diff = cv2.absdiff(gray, blur)
-    thresh_val = max(4, int(np.percentile(diff, 70) * 0.4))
-    _, stroke_mask = cv2.threshold(diff, thresh_val, 255, cv2.THRESH_BINARY)
+
+    # Only capture pixels BRIGHTER than local background (text strokes)
+    # NOT darker pixels (eye pupils/iris) — this prevents eye corruption
+    bright_diff = cv2.subtract(gray, blur)  # positive deviations only
+    thresh_val = max(4, int(np.percentile(bright_diff, 70) * 0.4))
+    _, stroke_mask = cv2.threshold(bright_diff, thresh_val, 255, cv2.THRESH_BINARY)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     return cv2.dilate(stroke_mask, kernel, iterations=2)
 

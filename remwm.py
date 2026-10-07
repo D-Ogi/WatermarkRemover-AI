@@ -104,11 +104,15 @@ def extract_strokes(roi: np.ndarray) -> np.ndarray:
     # Only capture pixels BRIGHTER than local background (text strokes)
     # NOT darker pixels (eye pupils/iris) — this prevents eye corruption
     bright_diff = cv2.subtract(gray, blur)  # positive deviations only
-    thresh_val = max(4, int(np.percentile(bright_diff, 70) * 0.4))
+    thresh_val = max(2, int(np.percentile(bright_diff, 50) * 0.3))  # More aggressive threshold
     _, stroke_mask = cv2.threshold(bright_diff, thresh_val, 255, cv2.THRESH_BINARY)
 
+    # Close gaps between text pixels (fills holes in letterforms)
+    close_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    stroke_mask = cv2.morphologyEx(stroke_mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
+
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    return cv2.dilate(stroke_mask, kernel, iterations=2)
+    return cv2.dilate(stroke_mask, kernel, iterations=3)
 
 
 def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarray:

@@ -108,12 +108,10 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     """
     Protect eyes, nose, and mouth from being inpainted.
 
-    Uses OpenCV face detection to find face regions, then protects:
-    - Upper 50% of face (eyes/forehead) with 15% margin
-    - Lower 25% of face (mouth) with 10% margin
-
-    Simple zone-based approach — no dependency on mediapipe or dlib.
-    Eyes are always in the upper half of the face bbox.
+    Uses OpenCV YuNet DNN face detector (handles tilted faces, angles,
+    close-ups — unlike haar cascades). Then protects:
+    - Upper 55% of face (eyes/forehead) with margin
+    - Lower 20% of face (mouth) with margin
 
     Args:
         image_np: HxWx3 uint8 RGB image array.
@@ -122,40 +120,49 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     Returns:
         Mask with face feature regions zeroed out.
     """
-    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+    h, w = mask_np.shape[:2]
 
-    # Find cascade file — handle missing data files (opencv-python-headless on Windows)
-    cascade_path = os.path.join(cv2.data.haarcascades, "haarcascade_frontalface_default.xml")
-    if not os.path.exists(cascade_path):
-        # Try to download the cascade file
+    # Get YuNet model — download if needed
+    model_dir = os.path.join(os.path.expanduser("~"), ".openwipe")
+    model_path = os.path.join(model_dir, "face_detection_yunet_2023mar.onnx")
+
+    if not os.path.exists(model_path):
         try:
             import urllib.request
-            url = "https://raw.githubusercontent.com/opencv/opencv/master/data/haarcascades/haarcascade_frontalface_default.xml"
-            os.makedirs(cv2.data.haarcascades, exist_ok=True)
-            urllib.request.urlretrieve(url, cascade_path)
-            logger.info(f"Downloaded haar cascade to {cascade_path}")
+            os.makedirs(model_dir, exist_ok=True)
+            url = "https://raw.githubusercontent.com/opencv/opencv_zoo/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
+            urllib.request.urlretrieve(url, model_path)
+            logger.info(f"Downloaded YuNet face model to {model_path}")
         except Exception as e:
-            logger.warning(f"Haar cascade not found and download failed — face protection skipped: {e}")
+            logger.warning(f"YuNet model download failed — face protection skipped: {e}")
             return mask_np
 
     try:
-        face_cascade = cv2.CascadeClassifier(cascade_path)
-        if face_cascade.empty():
-            logger.warning("Haar cascade failed to load — face protection skipped")
-            return mask_np
-        faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(40, 40))
+        # YuNet detector — scales input for detection accuracy
+        detector = cv2.FaceDetectorYN.create(
+            model_path, "", (w, h), score_threshold=0.6, nms_threshold=0.3, top_k=5
+        )
+        _, faces = detector.detect(image_np)
     except Exception as e:
-        logger.warning(f"Face detection failed — face protection skipped: {e}")
+        logger.warning(f"YuNet face detection failed — face protection skipped: {e}")
         return mask_np
 
-    if len(faces) == 0:
+    if faces is None or len(faces) == 0:
         logger.warning("No face detected — face protection skipped")
         return mask_np
 
-    h, w = mask_np.shape[:2]
+    # faces array: each row = [x, y, w, h, ...landmarks..., score]
+    min_face_area = (w * h) * 0.01  # Skip tiny faces (background people)
 
-    for (fx, fy, fw, fh) in faces:
-        # Protect upper 50% of face (eyes + forehead) with generous margin
+    for face in faces:
+        fx, fy, fw, fh = int(face[0]), int(face[1]), int(face[2]), int(face[3])
+
+        # Skip tiny faces (background/faraway people)
+        if fw * fh < min_face_area:
+            logger.info(f"Skipping small face at ({fx},{fy}) size {fw}x{fh}")
+            continue
+
+        # Protect upper 55% of face (eyes + forehead) with generous margin
         eye_y2 = fy + int(fh * 0.55)
         margin_x = int(fw * 0.15)
         margin_y = int(fh * 0.10)

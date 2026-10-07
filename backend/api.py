@@ -29,6 +29,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 
@@ -207,6 +208,13 @@ async def remove(req: RemoveRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# Serve frontend static files at root
+import os
+_ui_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui-openwipe")
+if os.path.isdir(_ui_dir):
+    app.mount("/", StaticFiles(directory=_ui_dir, html=True), name="ui")
 
 
 if __name__ == "__main__":

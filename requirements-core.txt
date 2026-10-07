@@ -10,3 +10,5 @@ filelock>=3.16
 loguru
 click
 tqdm
+fastapi
+uvicorn

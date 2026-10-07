@@ -10,5 +10,6 @@ filelock>=3.16
 loguru
 click
 tqdm
+mediapipe
 fastapi
 uvicorn

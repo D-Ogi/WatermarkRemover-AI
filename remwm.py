@@ -108,8 +108,9 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     """
     Protect eyes, nose, and mouth from being inpainted.
 
-    Detects face features using OpenCV cascade classifiers and removes those
-    regions from the mask so LaMa won't corrupt them.
+    Uses MediaPipe Face Mesh (468 precise face landmarks) to detect exact
+    eye boundaries, mouth, and nose regions, then removes those from the
+    mask so LaMa won't corrupt them.
 
     Args:
         image_np: HxWx3 uint8 RGB image array.
@@ -118,45 +119,79 @@ def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarr
     Returns:
         Mask with face feature regions zeroed out.
     """
-    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+    try:
+        import mediapipe as mp
+    except ImportError:
+        logger.warning("mediapipe not installed — face protection disabled")
+        return mask_np
 
-    # Detect faces
-    face_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-    )
-    eye_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_eye.xml"
-    )
-    mouth_cascade = cv2.CascadeClassifier(
-        cv2.data.haarcascades + "haarcascade_smile.xml"
-    )
+    h, w = mask_np.shape[:2]
 
-    faces = face_cascade.detectMultiScale(gray, 1.1, 5, minSize=(30, 30))
+    # MediaPipe Face Mesh landmark indices for facial features
+    # Left eye outer contour
+    LEFT_EYE = [33, 7, 163, 144, 145, 153, 154, 155, 133, 173, 157, 158, 159, 160, 161, 246]
+    # Right eye outer contour
+    RIGHT_EYE = [362, 382, 381, 380, 374, 373, 390, 249, 263, 466, 388, 387, 386, 385, 384, 398]
+    # Outer lips
+    LIPS = [61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291, 409, 270, 269, 267, 0, 37, 39, 40, 185]
+    # Nose tip area
+    NOSE = [1, 2, 98, 327, 168, 6, 197, 195, 5, 4, 45, 275, 44]
 
-    for (fx, fy, fw, fh) in faces:
-        face_roi = gray[fy:fy+fh, fx:fx+fw]
+    with mp.solutions.face_mesh.FaceMesh(
+        static_image_mode=True,
+        max_num_faces=5,
+        refine_landmarks=True,
+        min_detection_confidence=0.3,
+    ) as face_mesh:
+        results = face_mesh.process(image_np)
 
-        # Protect eyes (with generous margin)
-        eyes = eye_cascade.detectMultiScale(face_roi, 1.1, 5, minSize=(20, 20))
-        for (ex, ey, ew, eh) in eyes:
-            margin = int(max(ew, eh) * 0.4)
-            x1 = max(0, fx + ex - margin)
-            y1 = max(0, fy + ey - margin)
-            x2 = min(mask_np.shape[1], fx + ex + ew + margin)
-            y2 = min(mask_np.shape[0], fy + ey + eh + margin)
-            mask_np[y1:y2, x1:x2] = 0
-            logger.info(f"Protected eye region: ({x1},{y1})-({x2},{y2})")
+        if not results.multi_face_landmarks:
+            logger.warning("No face detected — face protection skipped")
+            return mask_np
 
-        # Protect mouth
-        mouths = mouth_cascade.detectMultiScale(face_roi, 1.1, 10, minSize=(30, 30))
-        for (mx, my, mw, mh) in mouths:
-            margin = int(max(mw, mh) * 0.3)
-            x1 = max(0, fx + mx - margin)
-            y1 = max(0, fy + my - margin)
-            x2 = min(mask_np.shape[1], fx + mx + mw + margin)
-            y2 = min(mask_np.shape[0], fy + my + mh + margin)
-            mask_np[y1:y2, x1:x2] = 0
-            logger.info(f"Protected mouth region: ({x1},{y1})-({x2},{y2})")
+        for face_landmarks in results.multi_face_landmarks:
+            def get_polygon(indices, margin_pct=0.15):
+                """Get convex hull of landmark indices with margin, as pixel coords."""
+                points = []
+                for idx in indices:
+                    lm = face_landmarks.landmark[idx]
+                    points.append((int(lm.x * w), int(lm.y * h)))
+
+                if len(points) < 3:
+                    return None
+
+                pts = np.array(points, dtype=np.int32)
+                # Compute bounding rect and expand by margin
+                x_min, y_min = pts.min(axis=0)
+                x_max, y_max = pts.max(axis=0)
+                mw = int((x_max - x_min) * margin_pct)
+                mh = int((y_max - y_min) * margin_pct)
+                # Build expanded rectangle polygon
+                return np.array([
+                    [max(0, x_min - mw), max(0, y_min - mh)],
+                    [min(w, x_max + mw), max(0, y_min - mh)],
+                    [min(w, x_max + mw), min(h, y_max + mh)],
+                    [max(0, x_min - mw), min(h, y_max + mh)],
+                ], dtype=np.int32)
+
+            # Protect eyes (generous margin — eyes are the most vulnerable)
+            for eye_indices in [LEFT_EYE, RIGHT_EYE]:
+                poly = get_polygon(eye_indices, margin_pct=0.35)
+                if poly is not None:
+                    cv2.fillPoly(mask_np, [poly], 0)
+                    logger.info(f"Protected eye region: {poly.tolist()}")
+
+            # Protect mouth
+            poly = get_polygon(LIPS, margin_pct=0.25)
+            if poly is not None:
+                cv2.fillPoly(mask_np, [poly], 0)
+                logger.info("Protected mouth region")
+
+            # Protect nose
+            poly = get_polygon(NOSE, margin_pct=0.20)
+            if poly is not None:
+                cv2.fillPoly(mask_np, [poly], 0)
+                logger.info("Protected nose region")
 
     return mask_np
 

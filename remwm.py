@@ -112,7 +112,19 @@ def extract_strokes(roi: np.ndarray) -> np.ndarray:
     stroke_mask = cv2.morphologyEx(stroke_mask, cv2.MORPH_CLOSE, close_kernel, iterations=2)
 
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-    return cv2.dilate(stroke_mask, kernel, iterations=3)
+    stroke_mask = cv2.dilate(stroke_mask, kernel, iterations=3)
+
+    # Brightness gate: only keep mask pixels where the ORIGINAL image is bright
+    # White watermark text is ~180-255. Eye iris/eyelid/shadows are ~50-120.
+    # This prevents the mask from covering dark facial features near text.
+    if roi.ndim == 3:
+        roi_gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    else:
+        roi_gray = roi
+    bright_gate = (roi_gray > 140).astype(np.uint8) * 255
+    stroke_mask = cv2.bitwise_and(stroke_mask, bright_gate)
+
+    return stroke_mask
 
 
 def protect_face_features(image_np: np.ndarray, mask_np: np.ndarray) -> np.ndarray:

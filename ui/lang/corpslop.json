@@ -29,6 +29,19 @@
       "placeholder": "watermark",
       "tooltip": "Try watermark, logo, text or signature. The algorithm does not accept a brand strategy deck."
     },
+    "device": {
+      "label": "Whose compute",
+      "tooltip": "Where the models run. Auto bills CUDA, then Apple MPS, then the CPU intern.",
+      "auto": "Auto",
+      "cpu": "CPU",
+      "cuda": "CUDA (NVIDIA)",
+      "mps": "MPS (Apple GPU)",
+      "mps_ready": "Apple GPU is on the org chart. Auto uses MPS.",
+      "cuda_ready": "NVIDIA CUDA is on the org chart. Auto uses it.",
+      "cpu_only": "This machine only staffed a CPU.",
+      "mps_missing": "MPS is not on this machine.",
+      "cuda_missing": "CUDA is not on this machine."
+    },
     "output_format": {
       "label": "Takeaway container",
       "tooltip": "Pick an output format. Auto keeps the image format and uses MP4 for video. Packaging is not the product, Karen from Marketing.",

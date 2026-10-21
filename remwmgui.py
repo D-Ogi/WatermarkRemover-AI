@@ -127,6 +127,13 @@ class Api:
         result = self.window.create_file_dialog(webview.FileDialog.FOLDER)
         return result[0] if result else None
 
+    def _device_choice(self, settings):
+        """Keep the GUI device on the CLI's accepted set."""
+        device = str((settings or {}).get('device') or 'auto').strip().lower()
+        if device not in {'auto', 'cpu', 'cuda', 'mps'}:
+            return 'auto'
+        return device
+
     def _would_overwrite_input(self, input_path, output_path):
         """Check if output would overwrite the input file."""
         supported_ext = {'.png', '.jpg', '.jpeg', '.webp', '.bmp', '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm'}
@@ -191,6 +198,7 @@ class Api:
         """Get static system info (CUDA, FFmpeg, GPU) - call once on startup"""
         info = {
             'cuda': False,
+            'mps': False,
             'gpu_name': None,
             'ffmpeg': False
         }
@@ -198,17 +206,26 @@ class Api:
         # Windows: hide console windows for subprocesses
         creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == 'win32' else 0
 
-        # Check CUDA via subprocess (avoid importing torch in GUI)
+        # Check accelerators via subprocess (avoid importing torch in the GUI)
+        probe = (
+            "import json,torch;"
+            "mps=bool(getattr(torch.backends,'mps',None) and torch.backends.mps.is_available());"
+            "cuda=bool(torch.cuda.is_available());"
+            "name=torch.cuda.get_device_name(0) if cuda else ('Apple GPU (MPS)' if mps else '');"
+            "print(json.dumps({'cuda':cuda,'mps':mps,'gpu_name':name}))"
+        )
         try:
             result = subprocess.run(
-                [python_executable(), '-c', 'import torch; print("CUDA:" + str(torch.cuda.is_available()) + ":" + (torch.cuda.get_device_name(0) if torch.cuda.is_available() else ""))'],
+                [python_executable(), '-c', probe],
                 capture_output=True, text=True, timeout=30, creationflags=creationflags
             )
-            if result.returncode == 0 and 'CUDA:' in result.stdout:
-                parts = result.stdout.strip().split(':')
-                info['cuda'] = parts[1] == 'True'
-                if len(parts) > 2 and parts[2]:
-                    info['gpu_name'] = parts[2]
+            for line in reversed(result.stdout.splitlines()):
+                if line.startswith('{'):
+                    reported = json.loads(line)
+                    info['cuda'] = bool(reported.get('cuda'))
+                    info['mps'] = bool(reported.get('mps'))
+                    info['gpu_name'] = reported.get('gpu_name') or None
+                    break
         except Exception:
             pass
 
@@ -292,7 +309,8 @@ class Api:
             'fade_in': fade_in,
             'fade_out': fade_out,
             'theme': settings.get('theme', 'brainrot'),
-            'lang': settings.get('lang', 'brainrot')
+            'lang': settings.get('lang', 'brainrot'),
+            'device': self._device_choice(settings)
         })
 
         # Build command
@@ -322,6 +340,8 @@ class Api:
 
         if fade_out and float(fade_out) > 0:
             cmd.append(f'--fade-out={float(fade_out)}')
+
+        cmd.append(f"--device={self._device_choice(settings)}")
 
         # Start processing in background thread
         with self._process_lock:
@@ -461,7 +481,8 @@ class Api:
         try:
             cmd = [python_executable(), str(APP_ROOT / 'remwm.py'), input_path, '--preview',
                    '--max-bbox-percent', str(int(settings.get('max_bbox', 15))),
-                   '--detection-prompt', settings.get('detection_prompt', 'watermark')]
+                   '--detection-prompt', settings.get('detection_prompt', 'watermark'),
+                   f"--device={self._device_choice(settings)}"]
             with self._process_lock:
                 if self._closed:
                     return {'error': 'Window is closing'}

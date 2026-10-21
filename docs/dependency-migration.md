@@ -48,7 +48,7 @@ GPU architecture. Consult [NVIDIA compatibility guidance](https://docs.nvidia.co
 and [official PyTorch builds](https://download.pytorch.org/whl/cu126/torch/).
 CUDA 12.x minor compatibility has feature/PTX limitations on older drivers.
 Hardware requiring another build needs an explicitly selected compatible pair.
-MPS inference remains outside the validated LaMA device contract.
+Apple Silicon can select MPS from the GUI or `--device`. Auto prefers CUDA, then MPS, then CPU. An unavailable CUDA or MPS request fails instead of switching devices. MPS uses float32, with CPU fallback for unimplemented Metal operators.
 
 ## Validation scope
 

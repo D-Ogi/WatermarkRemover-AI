@@ -29,6 +29,19 @@
       "placeholder": "watermark",
       "tooltip": "What to detect and remove. Try: watermark, logo, text, signature, etc."
     },
+    "device": {
+      "label": "Device",
+      "tooltip": "Where the models run. Auto uses CUDA, then Apple MPS, then CPU.",
+      "auto": "Auto",
+      "cpu": "CPU",
+      "cuda": "CUDA (NVIDIA)",
+      "mps": "MPS (Apple GPU)",
+      "mps_ready": "Apple GPU is available. Auto will use MPS.",
+      "cuda_ready": "NVIDIA CUDA is available. Auto will use CUDA.",
+      "cpu_only": "This machine only exposes CPU.",
+      "mps_missing": "MPS is not available on this machine.",
+      "cuda_missing": "CUDA is not available on this machine."
+    },
     "output_format": {
       "label": "Output Format",
       "tooltip": "Choose output file format. Auto keeps the original format.",

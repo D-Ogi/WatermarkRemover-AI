@@ -29,6 +29,19 @@
       "placeholder": "watermark",
       "tooltip": "输入 watermark、logo、text、signature 等检测目标。小熊维尼不是模型指令。"
     },
+    "device": {
+      "label": "算力",
+      "tooltip": "模型跑在哪。自动优先 CUDA，其次苹果 MPS，最后 CPU。",
+      "auto": "自动",
+      "cpu": "CPU",
+      "cuda": "CUDA（NVIDIA）",
+      "mps": "MPS（苹果 GPU）",
+      "mps_ready": "这台 Mac 能用 MPS。自动会走苹果 GPU。",
+      "cuda_ready": "检测到 NVIDIA CUDA。自动会走显卡。",
+      "cpu_only": "这台机器目前只能用 CPU。",
+      "mps_missing": "这台机器没有可用的 MPS。",
+      "cuda_missing": "这台机器没有可用的 CUDA。"
+    },
     "output_format": {
       "label": "成果格式",
       "tooltip": "选输出格式；自动保留图片原格式，视频使用MP4。不是选宣传口径。",

@@ -117,8 +117,9 @@ selected compatible torch/torchvision pair.
 - Symmetric padding aligns dimensions to multiples of 8. Tiny inputs are padded
   to at least 32 pixels per dimension, then cropped back; they are never resized.
 - Empty masks bypass inference. Caller-owned image/mask arrays are never modified.
-- CPU and CUDA are supported. An unavailable requested CUDA device fails explicitly;
-  MPS is rejected until its operators and results are validated.
+- CPU, CUDA, and Apple MPS are selectable. Auto prefers CUDA, then MPS, then CPU.
+  An unavailable requested CUDA or MPS device fails explicitly. MPS loads in float32
+  and can fall back to CPU for Metal operators PyTorch has not implemented.
 
 The old `resize_limit=1600` belonged to an unused RESIZE strategy; the application
 selected CROP. It was not a hard cap on a full-image mask. The new adapter likewise

@@ -7,18 +7,24 @@ from .model_store import ModelError, ensure_model, verify_stream
 from .processing import InpaintProcessor
 
 
+def mps_available():
+    """Report whether this PyTorch build can place tensors on Apple Metal."""
+    backend = getattr(torch.backends, "mps", None)
+    return bool(backend is not None and backend.is_available())
+
+
 class LamaInpaint(InpaintProcessor):
-    """Load verified LaMA on CPU/CUDA and preserve the application's BGR API."""
+    """Load verified LaMA on CPU, CUDA, or Apple MPS and preserve the BGR API."""
 
     def __init__(self, device="cpu", *, cache_dir=None, download=True):
-        """Verify the pinned artifact and load an evaluation-only CPU or CUDA model."""
+        """Verify the pinned artifact and load an evaluation-only model."""
         self.device = torch.device(device)
-        if self.device.type not in {"cpu", "cuda"}:
-            raise ValueError(
-                "LaMA currently supports CPU and CUDA; MPS is not validated"
-            )
+        if self.device.type not in {"cpu", "cuda", "mps"}:
+            raise ValueError("LaMA supports CPU, CUDA, and MPS")
         if self.device.type == "cuda" and not torch.cuda.is_available():
             raise RuntimeError("CUDA was requested for LaMA but PyTorch cannot use it")
+        if self.device.type == "mps" and not mps_available():
+            raise RuntimeError("MPS was requested for LaMA but PyTorch cannot use it")
         path = ensure_model(cache_dir, download=download)
         try:
             # Verify and load through the same handle: never deserialize a replaced path.

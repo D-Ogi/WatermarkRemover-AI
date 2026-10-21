@@ -29,6 +29,19 @@
       "placeholder": "marca d'agua",
       "tooltip": "Fala pro pai o que tem que sumir. Ex: logo, texto, dívida no Serasa."
     },
+    "device": {
+      "label": "Quem puxa o bonde",
+      "tooltip": "Onde o modelo roda. Auto pega CUDA, depois MPS da Apple, depois CPU.",
+      "auto": "Automático",
+      "cpu": "CPU",
+      "cuda": "CUDA (NVIDIA)",
+      "mps": "MPS (GPU da Apple)",
+      "mps_ready": "GPU da Apple na área. Auto vai de MPS.",
+      "cuda_ready": "CUDA da NVIDIA na área. Auto vai de placa.",
+      "cpu_only": "Essa máquina só tem CPU.",
+      "mps_missing": "Sem MPS nessa máquina.",
+      "cuda_missing": "Sem CUDA nessa máquina."
+    },
     "output_format": {
       "label": "Saída (Naipe)",
       "tooltip": "Escolhe como vai sair o produto do roubo.",

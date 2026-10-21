@@ -29,6 +29,19 @@
       "placeholder": "quoicoubeh",
       "tooltip": "Dis-moi ce que je dois virer. Ex: logo, text, ce truc moche."
     },
+    "device": {
+      "label": "Le moteur",
+      "tooltip": "Où tournent les modèles. Auto prend CUDA, puis MPS Apple, puis le CPU.",
+      "auto": "Auto",
+      "cpu": "CPU",
+      "cuda": "CUDA (NVIDIA)",
+      "mps": "MPS (GPU Apple)",
+      "mps_ready": "GPU Apple dispo. Auto part sur MPS.",
+      "cuda_ready": "CUDA NVIDIA dispo. Auto part sur la carte.",
+      "cpu_only": "Cette machine n'a que le CPU.",
+      "mps_missing": "Pas de MPS sur cette machine.",
+      "cuda_missing": "Pas de CUDA sur cette machine."
+    },
     "output_format": {
       "label": "Le Flow de sortie",
       "tooltip": "Choisis comment ça sort. Auto garde le flow original.",

@@ -40,7 +40,10 @@
       "cuda_ready": "NVIDIA spotted. Auto cooks on CUDA.",
       "cpu_only": "No GPU. CPU is on the menu.",
       "mps_missing": "No Apple GPU here. MPS cannot cook.",
-      "cuda_missing": "No NVIDIA here. CUDA cannot cook."
+      "cuda_missing": "No NVIDIA here. CUDA cannot cook.",
+      "cpu_selected": "This run cooks on CPU.",
+      "mps_selected": "This run cooks on the M-chip.",
+      "cuda_selected": "This run cooks on NVIDIA."
     },
     "output_format": {
       "label": "Final Drip",

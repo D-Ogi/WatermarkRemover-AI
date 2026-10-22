@@ -40,7 +40,10 @@
       "cuda_ready": "NVIDIA CUDA is on the org chart. Auto uses it.",
       "cpu_only": "This machine only staffed a CPU.",
       "mps_missing": "MPS is not on this machine.",
-      "cuda_missing": "CUDA is not on this machine."
+      "cuda_missing": "CUDA is not on this machine.",
+      "cpu_selected": "This run is staffed by the CPU.",
+      "mps_selected": "This run is staffed by the Apple GPU.",
+      "cuda_selected": "This run is staffed by NVIDIA CUDA."
     },
     "output_format": {
       "label": "Takeaway container",

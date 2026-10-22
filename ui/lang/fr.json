@@ -40,7 +40,10 @@
       "cuda_ready": "CUDA NVIDIA dispo. Auto part sur la carte.",
       "cpu_only": "Cette machine n'a que le CPU.",
       "mps_missing": "Pas de MPS sur cette machine.",
-      "cuda_missing": "Pas de CUDA sur cette machine."
+      "cuda_missing": "Pas de CUDA sur cette machine.",
+      "cpu_selected": "Ce passage tourne sur le CPU.",
+      "mps_selected": "Ce passage tourne sur le GPU Apple.",
+      "cuda_selected": "Ce passage tourne sur CUDA NVIDIA."
     },
     "output_format": {
       "label": "Le Flow de sortie",

@@ -40,7 +40,10 @@
       "cuda_ready": "检测到 NVIDIA CUDA。自动会走显卡。",
       "cpu_only": "这台机器目前只能用 CPU。",
       "mps_missing": "这台机器没有可用的 MPS。",
-      "cuda_missing": "这台机器没有可用的 CUDA。"
+      "cuda_missing": "这台机器没有可用的 CUDA。",
+      "cpu_selected": "这次会用 CPU。",
+      "mps_selected": "这次会用苹果 GPU。",
+      "cuda_selected": "这次会用 NVIDIA CUDA。"
     },
     "output_format": {
       "label": "成果格式",

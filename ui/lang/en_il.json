@@ -40,7 +40,10 @@
       "cuda_ready": "NVIDIA CUDA is present. Auto assigns the GPU.",
       "cpu_only": "This machine only exposes CPU.",
       "mps_missing": "MPS is not available on this machine.",
-      "cuda_missing": "CUDA is not available on this machine."
+      "cuda_missing": "CUDA is not available on this machine.",
+      "cpu_selected": "This run is assigned to CPU.",
+      "mps_selected": "This run is assigned to the Apple GPU.",
+      "cuda_selected": "This run is assigned to NVIDIA CUDA."
     },
     "output_format": {
       "label": "Release format",

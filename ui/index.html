@@ -770,11 +770,20 @@
                     if (this.device === 'cuda' && !this.systemInfo.cuda) {
                         return labels.cuda_missing || 'CUDA is not available on this machine.';
                     }
-                    if (this.systemInfo.mps) {
-                        return labels.mps_ready || 'Apple GPU is available. Auto will use MPS.';
+                    if (this.device === 'cpu') {
+                        return labels.cpu_selected || 'This run will use CPU.';
+                    }
+                    if (this.device === 'mps') {
+                        return labels.mps_selected || 'This run will use the Apple GPU.';
+                    }
+                    if (this.device === 'cuda') {
+                        return labels.cuda_selected || 'This run will use NVIDIA CUDA.';
                     }
                     if (this.systemInfo.cuda) {
                         return labels.cuda_ready || 'NVIDIA CUDA is available. Auto will use CUDA.';
+                    }
+                    if (this.systemInfo.mps) {
+                        return labels.mps_ready || 'Apple GPU is available. Auto will use MPS.';
                     }
                     return labels.cpu_only || 'This machine only exposes CPU.';
                 },

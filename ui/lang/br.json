@@ -40,7 +40,10 @@
       "cuda_ready": "CUDA da NVIDIA na área. Auto vai de placa.",
       "cpu_only": "Essa máquina só tem CPU.",
       "mps_missing": "Sem MPS nessa máquina.",
-      "cuda_missing": "Sem CUDA nessa máquina."
+      "cuda_missing": "Sem CUDA nessa máquina.",
+      "cpu_selected": "Essa rodada vai de CPU.",
+      "mps_selected": "Essa rodada vai de GPU da Apple.",
+      "cuda_selected": "Essa rodada vai de CUDA da NVIDIA."
     },
     "output_format": {
       "label": "Saída (Naipe)",

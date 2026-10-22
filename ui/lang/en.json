@@ -40,7 +40,10 @@
       "cuda_ready": "NVIDIA CUDA is available. Auto will use CUDA.",
       "cpu_only": "This machine only exposes CPU.",
       "mps_missing": "MPS is not available on this machine.",
-      "cuda_missing": "CUDA is not available on this machine."
+      "cuda_missing": "CUDA is not available on this machine.",
+      "cpu_selected": "This run will use CPU.",
+      "mps_selected": "This run will use the Apple GPU.",
+      "cuda_selected": "This run will use NVIDIA CUDA."
     },
     "output_format": {
       "label": "Output Format",

@@ -731,7 +731,9 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
 
     input_path = Path(input_path)
     device = resolve_device(device)
-    print(f"Using device: {device}")
+    # Preview callers parse stdout as one JSON document. Keep this status off that stream.
+    if not preview:
+        print(f"Using device: {device}")
     model_dtype = inference_dtype(device)
 
     # ========== PREVIEW MODE ==========

@@ -253,8 +253,8 @@
 
                 <!-- Device -->
                 <div class="space-y-1">
-                    <label class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.device?.tooltip || ''" x-text="t.settings?.device?.label || 'Device'"></label>
-                    <select x-model="device" @change="saveConfigDebounced()" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-cyan outline-none font-mono">
+                    <label for="device-select" class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.device?.tooltip || ''" x-text="t.settings?.device?.label || 'Device'"></label>
+                    <select id="device-select" x-model="device" @change="saveConfigDebounced()" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-cyan outline-none font-mono">
                         <option value="auto" x-text="t.settings?.device?.auto || 'Auto'"></option>
                         <option value="cpu" x-text="t.settings?.device?.cpu || 'CPU'"></option>
                         <option value="cuda" x-text="t.settings?.device?.cuda || 'CUDA (NVIDIA)'"></option>

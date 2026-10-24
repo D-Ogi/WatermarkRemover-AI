@@ -6,6 +6,9 @@ runs below compare CPU and MPS on the same inputs. They do not measure removal
 quality against ground truth, and they do not represent other Apple, NVIDIA, or
 CPU machines.
 
+Maintainers still need to decide what a benchmark should require. This note does
+not define that set, metric, or acceptance bar.
+
 ## Environment
 
 | Item | Value |
@@ -20,7 +23,10 @@ CPU machines.
 The source video and both outputs stayed on the local machine. They are not in
 this pull request.
 
-## Synthetic weights
+## Synthetic inputs
+
+The images in this section are synthetic. The weights are the cached LaMA file
+and the pinned Florence-2 revision in the table above, not a generated model.
 
 LaMA inpainted a 128×160 random image with a 50×70 mask. CPU and MPS both
 returned finite images of the same shape, left unmasked pixels unchanged, and

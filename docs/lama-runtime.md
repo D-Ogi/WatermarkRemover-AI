@@ -136,7 +136,9 @@ The lightweight suite exercises processing and download integrity without PyTorc
 or real model weights. The separate application job installs the complete manifest
 on Windows/Linux/macOS, runs `pip check`, checks imports/CLI help, and executes a
 small generated TorchScript model plus image/video routing tests. Neither job
-downloads production weights or certifies GPU execution.
+downloads production weights or certifies GPU execution. One Apple MPS
+sanity comparison is recorded in [mps-sanity.md](mps-sanity.md). It is not a
+benchmark.
 
 Changes to model execution also need a separately recorded real-weight comparison:
 model digest, runtime versions, device, fixture dimensions/masks and differences

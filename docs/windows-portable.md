@@ -42,7 +42,7 @@ python -m model_assets --florence-only --endpoint https://huggingface.co
 FFmpeg is still optional and must be available on PATH to preserve video audio.
 The UI reports its availability. The package does not silently install a system
 codec or driver. CUDA packages do not certify every NVIDIA card or older driver;
-MPS is not a Windows feature and is outside the current LaMA device contract.
+MPS is an Apple Silicon option and is not part of the Windows package.
 
 ## Portable state and upgrades
 

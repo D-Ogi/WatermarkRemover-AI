@@ -29,6 +29,22 @@
       "placeholder": "watermark",
       "tooltip": "検出する対象を指定。watermark、logo、text、signature など。呪文を長くしてもSSRは出ない。"
     },
+    "device": {
+      "label": "演算結界",
+      "tooltip": "モデルをどこで回すか。自動は CUDA、次に Apple MPS、最後に CPU。",
+      "auto": "自動",
+      "cpu": "CPU",
+      "cuda": "CUDA（NVIDIA）",
+      "mps": "MPS（Apple GPU）",
+      "mps_ready": "Apple GPU を検知。自動は MPS で詠唱する。",
+      "cuda_ready": "NVIDIA CUDA を検知。自動はグラボで詠唱する。",
+      "cpu_only": "この端末は CPU しか使えない。",
+      "mps_missing": "この端末に MPS はない。",
+      "cuda_missing": "この端末に CUDA はない。",
+      "cpu_selected": "今回は CPU で詠唱する。",
+      "mps_selected": "今回は Apple GPU で詠唱する。",
+      "cuda_selected": "今回は NVIDIA CUDA で詠唱する。"
+    },
     "output_format": {
       "label": "封印形式",
       "tooltip": "出力形式を選ぶ。自動なら画像は元の形式、動画はMP4。拡張子に課金要素はない。",

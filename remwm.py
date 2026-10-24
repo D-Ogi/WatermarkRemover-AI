@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+
 from model_assets import ensure_florence
 import sys
 import click
@@ -7,13 +10,12 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from transformers import AutoProcessor, Florence2ForConditionalGeneration
-from lama_inpaint.runtime import LamaInpaint
+from lama_inpaint.runtime import LamaInpaint, mps_available
 import torch
 from torch.nn import Module
 import tqdm
 from loguru import logger
 from enum import Enum
-import os
 import tempfile
 import shutil
 import subprocess
@@ -36,6 +38,35 @@ def load_lama_model(device):
     """
     logger.info("Loading LaMA (verifying cached weights or downloading if missing)")
     return LamaInpaint(device)
+
+
+def resolve_device(choice):
+    """Use CUDA, then Apple MPS, then CPU unless the caller names a device."""
+    choice = (choice or "auto").strip().lower()
+    if choice not in {"auto", "cpu", "cuda", "mps"}:
+        raise click.ClickException("Device must be auto, cpu, cuda, or mps.")
+    if choice == "cpu":
+        return "cpu"
+    if choice == "cuda":
+        if not torch.cuda.is_available():
+            raise click.ClickException("CUDA was requested but PyTorch cannot use it.")
+        return "cuda"
+    if choice == "mps":
+        if not mps_available():
+            raise click.ClickException(
+                "MPS was requested but PyTorch cannot use it. MPS needs an Apple Silicon Mac."
+            )
+        return "mps"
+    if torch.cuda.is_available():
+        return "cuda"
+    if mps_available():
+        return "mps"
+    return "cpu"
+
+
+def inference_dtype(device):
+    """Keep the CUDA checkpoint dtype. CPU and MPS stay float32 so Florence can generate."""
+    return None if device == "cuda" else torch.float32
 
 
 class TaskType(str, Enum):
@@ -667,7 +698,8 @@ def handle_one(image_path: Path, output_path: Path, florence_model, florence_pro
 @click.option("--mask-mode", type=click.Choice(["box", "stroke"], case_sensitive=False), default="box", help="Mask mode: 'box' (default) or 'stroke' for edge/stroke-level mask.")
 @click.option("--double-pass", is_flag=True, default=False, help="Run a second inpainting pass on the mask.")
 @click.option("--max-dim", type=click.IntRange(min=1), default=None, help="Downscale image if max dimension exceeds this value.")
-def main(input_path: str, output_path: str, preview: bool, overwrite: bool, transparent: bool, max_bbox_percent: float, force_format: str, detection_prompt: str, detection_skip: int, fade_in: float, fade_out: float, mask_mode: str, double_pass: bool, max_dim: int):
+@click.option("--device", type=click.Choice(["auto", "cpu", "cuda", "mps"], case_sensitive=False), default="auto", show_default=True, help="Compute device. auto uses CUDA, then Apple MPS, then CPU.")
+def main(input_path: str, output_path: str, preview: bool, overwrite: bool, transparent: bool, max_bbox_percent: float, force_format: str, detection_prompt: str, detection_skip: int, fade_in: float, fade_out: float, mask_mode: str, double_pass: bool, max_dim: int, device: str):
     """
     CLI entry point for WatermarkRemover-AI to process images, videos, or directories.
 
@@ -686,6 +718,7 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         mask_mode: 'box' or 'stroke' mask mode.
         double_pass: Whether to run a second inpainting pass.
         max_dim: Maximum dimension to downscale image before processing.
+        device: auto, cpu, cuda, or mps. auto prefers CUDA, then Apple MPS, then CPU.
     """
     # Input validation
     if detection_skip < 1 or detection_skip > 10:
@@ -697,6 +730,11 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         fade_out = 0
 
     input_path = Path(input_path)
+    device = resolve_device(device)
+    # Preview callers parse stdout as one JSON document. Keep this status off that stream.
+    if not preview:
+        print(f"Using device: {device}")
+    model_dtype = inference_dtype(device)
 
     # ========== PREVIEW MODE ==========
     if preview:
@@ -704,12 +742,6 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
         import base64
         from io import BytesIO
         import random
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-
-        # Force no dtype for CUDA (intentional default)
-        # Apply float32 for CPU (compatibility)
-        model_dtype = torch.float32 if device == "cpu" else None
 
         florence_path = str(ensure_florence())
         florence_model = Florence2ForConditionalGeneration.from_pretrained(
@@ -782,13 +814,6 @@ def main(input_path: str, output_path: str, preview: bool, overwrite: bool, tran
 
     # ========== NORMAL PROCESSING MODE ==========
     output_path = Path(output_path)
-
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"Using device: {device}")
-
-    # Force no dtype for CUDA (intentional default)
-    # Apply float32 for CPU (compatibility)
-    model_dtype = torch.float32 if device == "cpu" else None
 
     florence_path = str(ensure_florence())
     florence_model = Florence2ForConditionalGeneration.from_pretrained(

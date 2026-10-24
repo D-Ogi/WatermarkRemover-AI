@@ -56,10 +56,33 @@ def test_corrupt_weights_are_never_deserialized(scripted_weights, monkeypatch):
         LamaInpaint("cpu", cache_dir=scripted_weights, download=False)
 
 
-def test_reject_unvalidated_device_before_loading():
-    """Reject MPS explicitly rather than promising unvalidated operator support."""
-    with pytest.raises(ValueError, match="MPS"):
+def test_unknown_device_is_rejected_before_loading():
+    """Reject devices outside CPU, CUDA, and MPS before touching weights."""
+    with pytest.raises(ValueError, match="CPU, CUDA, and MPS"):
+        LamaInpaint("vulkan", download=False)
+
+
+def test_mps_unavailable_is_explicit(monkeypatch):
+    """Report unavailable MPS without silently selecting a different device."""
+    backend = getattr(torch.backends, "mps", None)
+    if backend is None:
+        pytest.skip("PyTorch build has no MPS backend")
+    monkeypatch.setattr(backend, "is_available", lambda: False)
+    with pytest.raises(RuntimeError, match="MPS"):
         LamaInpaint("mps", download=False)
+
+
+def test_mps_scripted_model_end_to_end(scripted_weights):
+    """Run the same verified fixture on Apple MPS when this machine has it."""
+    if not (getattr(torch.backends, "mps", None) and torch.backends.mps.is_available()):
+        pytest.skip("MPS is not available")
+    model = LamaInpaint("mps", cache_dir=scripted_weights, download=False)
+    image = np.full((13, 17, 3), (23, 51, 81), np.uint8)
+    mask = np.zeros((13, 17), np.uint8)
+    mask[2:7, 3:9] = 255
+    result = model(image, mask)
+    assert np.all(result[mask == 255] == (0, 0, 255))
+    np.testing.assert_array_equal(result[mask == 0], image[:, :, ::-1][mask == 0])
 
 
 def test_cuda_unavailable_is_explicit(monkeypatch):

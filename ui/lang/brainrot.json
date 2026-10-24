@@ -29,6 +29,22 @@
       "placeholder": "what are we cooking?",
       "tooltip": "What are we hunting? Try: watermark, logo, text, cringe, etc."
     },
+    "device": {
+      "label": "Who's Cooking",
+      "tooltip": "Where the models cook. Auto grabs CUDA, then Apple MPS, then CPU.",
+      "auto": "Auto (Let Him Cook)",
+      "cpu": "CPU (Broke)",
+      "cuda": "CUDA (NVIDIA Rizz)",
+      "mps": "MPS (Apple Silicon)",
+      "mps_ready": "M-chip spotted. Auto cooks on MPS.",
+      "cuda_ready": "NVIDIA spotted. Auto cooks on CUDA.",
+      "cpu_only": "No GPU. CPU is on the menu.",
+      "mps_missing": "No Apple GPU here. MPS cannot cook.",
+      "cuda_missing": "No NVIDIA here. CUDA cannot cook.",
+      "cpu_selected": "This run cooks on CPU.",
+      "mps_selected": "This run cooks on the M-chip.",
+      "cuda_selected": "This run cooks on NVIDIA."
+    },
     "output_format": {
       "label": "Final Drip",
       "tooltip": "Pick your output drip. Auto = let him cook the original format.",

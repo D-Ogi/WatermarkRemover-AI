@@ -251,6 +251,18 @@
                     </div>
                 </div>
 
+                <!-- Device -->
+                <div class="space-y-1">
+                    <label for="device-select" class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.device?.tooltip || ''" x-text="t.settings?.device?.label || 'Device'"></label>
+                    <select id="device-select" x-model="device" @change="saveConfigDebounced()" class="w-full bg-black border border-white/20 text-white text-sm rounded-lg p-2.5 focus:border-neon-cyan outline-none font-mono">
+                        <option value="auto" x-text="t.settings?.device?.auto || 'Auto'"></option>
+                        <option value="cpu" x-text="t.settings?.device?.cpu || 'CPU'"></option>
+                        <option value="cuda" x-text="t.settings?.device?.cuda || 'CUDA (NVIDIA)'"></option>
+                        <option value="mps" x-text="t.settings?.device?.mps || 'MPS (Apple GPU)'"></option>
+                    </select>
+                    <div class="text-[9px] text-gray-500" x-text="deviceHint()"></div>
+                </div>
+
                 <!-- Format Dropdown -->
                 <div class="space-y-1">
                     <label class="text-[10px] text-gray-500 uppercase cursor-help" :data-tooltip="t.settings?.output_format?.tooltip || ''" x-text="t.settings?.output_format?.label || 'Output Format'"></label>
@@ -542,6 +554,7 @@
                 transparent: false,
                 detection: 15,
                 format: 'None',
+                device: 'auto',
                 inputPath: '',
                 outputPath: '',
                 processing: false,
@@ -558,6 +571,7 @@
                 logs: [],
                 systemInfo: {
                     cuda: false,
+                    mps: false,
                     ram: 0,
                     gpu: 'Checking...',
                     ffmpeg: false
@@ -619,6 +633,7 @@
                             this.transparent = config.transparent || false;
                             this.detection = config.max_bbox_percent || 15;
                             this.format = config.force_format || 'None';
+                            this.device = config.device || 'auto';
                             this.mode = config.mode || 'single';
                             this.detectionPrompt = config.detection_prompt || 'watermark';
                             this.detectionSkip = config.detection_skip || 1;
@@ -724,6 +739,7 @@
                         try {
                             const info = await pywebview.api.get_static_info();
                             this.systemInfo.cuda = info.cuda;
+                            this.systemInfo.mps = !!info.mps;
                             this.systemInfo.gpu = info.gpu_name || 'CPU MODE';
                             this.systemInfo.ffmpeg = info.ffmpeg;
                         } catch (e) {
@@ -744,6 +760,32 @@
                             // ignore
                         }
                     }
+                },
+
+                deviceHint() {
+                    const labels = this.t.settings?.device || {};
+                    if (this.device === 'mps' && !this.systemInfo.mps) {
+                        return labels.mps_missing || 'MPS is not available on this machine.';
+                    }
+                    if (this.device === 'cuda' && !this.systemInfo.cuda) {
+                        return labels.cuda_missing || 'CUDA is not available on this machine.';
+                    }
+                    if (this.device === 'cpu') {
+                        return labels.cpu_selected || 'This run will use CPU.';
+                    }
+                    if (this.device === 'mps') {
+                        return labels.mps_selected || 'This run will use the Apple GPU.';
+                    }
+                    if (this.device === 'cuda') {
+                        return labels.cuda_selected || 'This run will use NVIDIA CUDA.';
+                    }
+                    if (this.systemInfo.cuda) {
+                        return labels.cuda_ready || 'NVIDIA CUDA is available. Auto will use CUDA.';
+                    }
+                    if (this.systemInfo.mps) {
+                        return labels.mps_ready || 'Apple GPU is available. Auto will use MPS.';
+                    }
+                    return labels.cpu_only || 'This machine only exposes CPU.';
                 },
 
                 isVideoFile(path) {
@@ -856,6 +898,7 @@
                                 detection_skip: parseInt(this.detectionSkip) || 1,
                                 fade_in: parseFloat(this.fadeIn) || 0,
                                 fade_out: parseFloat(this.fadeOut) || 0,
+                                device: this.device,
                                 // UI settings
                                 theme: this.theme,
                                 lang: this.lang
@@ -930,7 +973,8 @@
                             const result = await pywebview.api.preview_detection({
                                 input: this.inputPath,
                                 detection_prompt: this.detectionPrompt || 'watermark',
-                                max_bbox: this.detection
+                                max_bbox: this.detection,
+                                device: this.device
                             });
 
                             if (result.error) {
@@ -991,6 +1035,7 @@
                         transparent: this.transparent,
                         max_bbox_percent: this.detection,
                         force_format: this.format,
+                        device: this.device,
                         mode: this.mode,
                         detection_prompt: this.detectionPrompt,
                         // Video settings
